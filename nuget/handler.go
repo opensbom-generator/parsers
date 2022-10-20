@@ -20,7 +20,7 @@ import (
 
 type nuget struct {
 	metadata   models.PluginMetadata
-	rootModule *models.Module
+	rootModule *meta.Package
 	command    *helper.Cmd
 }
 
@@ -214,7 +214,7 @@ func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]me
 }
 
 // ListUsedModules ...
-func (m *nuget) ListUsedModules(path string) ([]models.Module, error) {
+func (m *nuget) ListUsedModules(path string) ([]meta.Package, error) {
 	var globalSettingFile string
 	return m.ListModulesWithDeps(path, globalSettingFile)
 }
@@ -255,8 +255,8 @@ func (m *nuget) GetProjectManifestPath(path string) string {
 }
 
 // parsePackagesConfigModules parses the output -- works for the packages.config
-func (m *nuget) parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
+func (m *nuget) parsePackagesConfigModules(modulePath string) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 	raw, err := ioutil.ReadFile(modulePath)
 	if err != nil {
 		return modules, err
@@ -277,8 +277,8 @@ func (m *nuget) parsePackagesConfigModules(modulePath string) ([]models.Module, 
 }
 
 // parseAssetModules parses the output -- works for the project.assets.json
-func (m *nuget) parseAssetModules(modulePath string) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
+func (m *nuget) parseAssetModules(modulePath string) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 	raw, err := ioutil.ReadFile(modulePath)
 	if err != nil {
 		return modules, err
@@ -368,7 +368,7 @@ func (m *nuget) buildModule(name string, version string, dependencies map[string
 	if err != nil {
 		return module, err
 	}
-	module.CheckSum = checkSum
+	module.Checksum = *checkSum
 	// get nuget spec file details
 	nuSpecFile, err := getNugetSpec(name, version)
 	if err != nil {
@@ -409,10 +409,10 @@ func (m *nuget) buildModule(name string, version string, dependencies map[string
 		dependencyModules[dName] = &meta.Package{
 			Name:     dName,
 			Version:  dVersion,
-			Checksum: checkSum,
+			Checksum: *checkSum,
 		}
 	}
-	module.Modules = dependencyModules
+	module.Packages = dependencyModules
 	return module, nil
 }
 

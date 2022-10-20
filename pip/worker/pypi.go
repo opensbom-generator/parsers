@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/parsers/meta"
 )
 
 var errorPackageDigestNotFound = errors.New("Digest not found")
@@ -69,16 +69,16 @@ type DigestTypes struct {
 }
 
 // Order in which we want to pick the package digest
-var HashAlgoPickOrder []models.HashAlgorithm = []models.HashAlgorithm{
-	models.HashAlgoSHA512,
-	models.HashAlgoSHA384,
-	models.HashAlgoSHA256,
-	models.HashAlgoSHA224,
-	models.HashAlgoSHA1,
-	models.HashAlgoMD6,
-	models.HashAlgoMD5,
-	models.HashAlgoMD4,
-	models.HashAlgoMD2,
+var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
+	meta.HashAlgoSHA512,
+	meta.HashAlgoSHA384,
+	meta.HashAlgoSHA256,
+	meta.HashAlgoSHA224,
+	meta.HashAlgoSHA1,
+	meta.HashAlgoMD6,
+	meta.HashAlgoMD5,
+	meta.HashAlgoMD4,
+	meta.HashAlgoMD2,
 }
 
 func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
@@ -130,8 +130,8 @@ func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, strin
 	return name, email
 }
 
-func GetHighestOrderHashData(digests DigestTypes) (models.HashAlgorithm, string) {
-	var algoType models.HashAlgorithm
+func GetHighestOrderHashData(digests DigestTypes) (meta.HashAlgorithm, string) {
+	var algoType meta.HashAlgorithm
 	var digestValue string
 
 	v := reflect.ValueOf(digests)
@@ -176,9 +176,9 @@ func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPa
 	return distInfo, status
 }
 
-func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *models.CheckSum {
-	checksum := models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
+func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *meta.Checksum {
+	checksum := meta.Checksum{
+		Algorithm: meta.HashAlgoSHA1,
 		Content:   []byte(pkgData.Info.Name),
 	}
 

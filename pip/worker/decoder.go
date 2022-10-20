@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 const pkgMetedataSeparator string = "---"
@@ -129,8 +129,8 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 	return metainfo, metaList, nil
 }
 
-func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
-	var module models.Module
+func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
+	var module meta.Package
 
 	// Prepare basic module info
 	module.Root = metadata.Root
@@ -159,12 +159,12 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		metadata.Author, metadata.AuthorEmail = GetMaintenerDataFromPyPiPackageData(pypiData)
 	}
 
-	contactType := models.Person
+	contactType := meta.Person
 	if IsAuthorAnOrganization(metadata.Author, metadata.AuthorEmail) {
-		contactType = models.Organization
+		contactType = meta.Organization
 	}
 
-	module.Supplier = models.SupplierContact{
+	module.Supplier = meta.Supplier{
 		Type:  contactType,
 		Name:  metadata.Author,
 		Email: metadata.AuthorEmail,
@@ -172,7 +172,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 
 	// Prepare checksum
 	checksum := GetChecksumeFromPyPiPackageData(pypiData, metadata)
-	module.CheckSum = checksum
+	module.Checksum = *checksum
 
 	// Prepare download location
 	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
@@ -200,7 +200,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	}
 
 	// Prepare dependency module
-	module.Modules = map[string]*models.Module{}
+	module.Packages = map[string]*meta.Package{}
 
 	return module
 }
@@ -214,7 +214,7 @@ func (d *MetadataDecoder) GetMetadataList(pkgs []Packages) (map[string]Metadata,
 	return metainfo, metaList, nil
 }
 
-func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]models.Module) (map[string]Metadata, error) {
+func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]meta.Package) (map[string]Metadata, error) {
 	metainfo, metaList, err := d.GetMetadataList(pkgs)
 	if err != nil {
 		return nil, err
@@ -227,8 +227,8 @@ func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]m
 	return metainfo, nil
 }
 
-func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Metadata) error {
-	moduleMap := map[string]models.Module{}
+func BuildDependencyGraph(modules *[]meta.Package, pkgsMetadata *map[string]Metadata) error {
+	moduleMap := map[string]meta.Package{}
 
 	for _, module := range *modules {
 		moduleMap[strings.ToLower(module.Name)] = module
@@ -238,14 +238,14 @@ func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Met
 		mod := moduleMap[strings.ToLower(pkgmeta.Name)]
 		for _, modname := range pkgmeta.Modules {
 			if depModule, ok := moduleMap[strings.ToLower(modname)]; ok {
-				mod.Modules[depModule.Name] = &models.Module{
+				mod.Packages[depModule.Name] = &meta.Package{
 					Version:          depModule.Version,
 					Name:             depModule.Name,
 					Path:             depModule.Path,
 					LocalPath:        depModule.LocalPath,
 					Supplier:         depModule.Supplier,
 					PackageURL:       depModule.PackageURL,
-					CheckSum:         depModule.CheckSum,
+					Checksum:         depModule.Checksum,
 					PackageHomePage:  depModule.PackageHomePage,
 					LicenseConcluded: depModule.LicenseConcluded,
 					LicenseDeclared:  depModule.LicenseDeclared,
