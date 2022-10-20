@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
@@ -64,7 +65,7 @@ func (m *mod) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *mod) GetRootModule(path string) (*models.Module, error) {
+func (m *mod) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module, err := m.getModule(path)
 		if err != nil {
@@ -78,7 +79,7 @@ func (m *mod) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListUsedModules...
-func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
+func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.buildCmd(ModulesCmd, path); err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
 		return nil, err
 	}
 
-	modules := []models.Module{}
+	modules := []meta.Package{}
 	if err := NewDecoder(buffer).ConvertJSONReaderToModules(mainModule.Path, &modules); err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -126,24 +127,24 @@ func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]mode
 	return modules, nil
 }
 
-func (m *mod) getModule(path string) (models.Module, error) {
+func (m *mod) getModule(path string) (meta.Package, error) {
 	if err := m.buildCmd(RootModuleCmd, path); err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	buffer := new(bytes.Buffer)
 	if err := m.command.Execute(buffer); err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 	defer buffer.Reset()
 
-	module := models.Module{}
+	module := meta.Package{}
 	if err := NewDecoder(buffer).ConvertJSONReaderToSingleModule(&module); err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	if module.Path == "" {
-		return models.Module{}, errFailedToConvertModules
+		return meta.Package{}, errFailedToConvertModules
 	}
 
 	return module, nil
