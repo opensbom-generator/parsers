@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/worker"
 )
 
@@ -31,7 +31,7 @@ var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 type pyenv struct {
-	metadata   models.PluginMetadata
+	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 	basepath   string
@@ -45,7 +45,7 @@ type pyenv struct {
 // New ...
 func New() *pyenv {
 	return &pyenv{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "The Python Package Index (PyPI)",
 			Slug:       "pyenv",
 			Manifest:   []string{manifestFile},
@@ -55,7 +55,7 @@ func New() *pyenv {
 }
 
 // Get Metadata ...
-func (m *pyenv) GetMetadata() models.PluginMetadata {
+func (m *pyenv) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
@@ -69,7 +69,7 @@ func (m *pyenv) IsValid(path string) bool {
 	return false
 }
 
-// Has Modules Installed ...
+// HasModulesInstalled
 func (m *pyenv) HasModulesInstalled(path string) error {
 	dir := m.GetExecutableDir()
 	ModulesCmd := GetExecutableCommand(ModulesCmd)

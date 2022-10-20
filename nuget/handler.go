@@ -12,14 +12,14 @@ import (
 	"strings"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type nuget struct {
-	metadata   models.PluginMetadata
+	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 }
@@ -46,7 +46,7 @@ var (
 // New ...
 func New() *nuget {
 	return &nuget{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Nuget Package Manager",
 			Slug:       "nuget",
 			Manifest:   manifestExtensions,
@@ -56,7 +56,7 @@ func New() *nuget {
 }
 
 // GetMetadata ...
-func (m *nuget) GetMetadata() models.PluginMetadata {
+func (m *nuget) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

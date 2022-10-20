@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 // New ...
 func New() *mod {
 	return &mod{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:     "Go Modules",
 			Slug:     "go-mod",
 			Manifest: []string{"go.mod"},
@@ -23,7 +23,7 @@ func New() *mod {
 }
 
 // GetMetadata ...
-func (m *mod) GetMetadata() models.PluginMetadata {
+func (m *mod) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

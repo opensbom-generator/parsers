@@ -11,13 +11,13 @@ import (
 	"strings"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/reader"
 )
 
 type npm struct {
-	metadata models.PluginMetadata
+	metadata plugin.Metadata
 }
 
 var (
@@ -30,7 +30,7 @@ var (
 // New creates a new npm manager instance
 func New() *npm {
 	return &npm{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
 			Manifest:   []string{"package.json", lockFile},
@@ -40,7 +40,7 @@ func New() *npm {
 }
 
 // GetMetadata returns metadata descriptions Name, Slug, Manifest, ModulePath
-func (m *npm) GetMetadata() models.PluginMetadata {
+func (m *npm) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

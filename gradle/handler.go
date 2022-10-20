@@ -9,19 +9,19 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type gradle struct {
-	metadata models.PluginMetadata
+	metadata plugin.Metadata
 	ge       gradleExec
 	basepath string
 }
 
 func New() *gradle {
 	return &gradle{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Java Gradle",
 			Slug:       "Java-Gradle",
 			Manifest:   []string{"build.gradle", "settings.gradle"},
@@ -30,7 +30,7 @@ func New() *gradle {
 	}
 }
 
-func (m *gradle) GetMetadata() models.PluginMetadata {
+func (m *gradle) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

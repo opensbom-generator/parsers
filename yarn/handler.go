@@ -13,13 +13,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/reader"
 )
 
 type yarn struct {
-	metadata models.PluginMetadata
+	metadata plugin.Metadata
 }
 
 var (
@@ -32,7 +33,7 @@ var (
 // New creates a new yarn instance
 func New() *yarn {
 	return &yarn{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Yarn Package Manager",
 			Slug:       "yarn",
 			Manifest:   []string{"package.json", lockFile},
@@ -42,7 +43,7 @@ func New() *yarn {
 }
 
 // GetMetadata returns metadata descriptions Name, Slug, Manifest, ModulePath
-func (m *yarn) GetMetadata() models.PluginMetadata {
+func (m *yarn) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
@@ -94,14 +95,14 @@ func (m *yarn) SetRootModule(path string) error {
 }
 
 // GetRootModule return
-//root package information ex. Name, Version
-func (m *yarn) GetRootModule(path string) (*models.Module, error) {
+// root package information ex. Name, Version
+func (m *yarn) GetRootModule(path string) (*meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return &models.Module{}, err
+		return &meta.Package{}, err
 	}
-	mod := &models.Module{}
+	mod := &meta.Package{}
 
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
@@ -128,7 +129,7 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	if !rg.MatchString(mod.PackageDownloadLocation) {
 		mod.PackageDownloadLocation = "NONE"
 	}
-	mod.Modules = map[string]*models.Module{}
+	mod.Packages = map[string]*meta.Package{}
 	mod.Copyright = getCopyright(path)
 	modLic, err := helper.GetLicenses(path)
 	if err != nil {
@@ -144,17 +145,17 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListUsedModules return brief info of installed modules, Name and Version
-func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
+func (m *yarn) ListUsedModules(path string) ([]meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
-	modules := make([]models.Module, 0)
+	modules := make([]meta.Package, 0)
 	deps := pkResult["dependencies"].(map[string]interface{})
 
 	for k, v := range deps {
-		var mod models.Module
+		var mod meta.Package
 		mod.Name = k
 		mod.Version = strings.TrimPrefix(v.(string), "^")
 		modules = append(modules, mod)
@@ -164,7 +165,7 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps return all info of installed modules
-func (m *yarn) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *yarn) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	deps, err := readLockFile(filepath.Join(path, lockFile))
 	allDeps := appendNestedDependencies(deps)
 	if err != nil {
@@ -174,14 +175,14 @@ func (m *yarn) ListModulesWithDeps(path string, globalSettingFile string) ([]mod
 	return m.buildDependencies(path, allDeps)
 }
 
-func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
+func (m *yarn) buildDependencies(path string, deps []dependency) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
 		return modules, err
 	}
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
-	de.CheckSum = &models.CheckSum{
+	de.Checksum = meta.Checksum{
 		Algorithm: "SHA256",
 		Value:     h,
 	}
@@ -191,16 +192,16 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 	}
 	modules = append(modules, *de)
 	for _, d := range deps {
-		var mod models.Module
+		var mod meta.Package
 		mod.Name = d.Name
 		mod.Version = extractVersion(d.Version)
-		modules[0].Modules[d.Name] = &models.Module{
+		modules[0].Packages[d.Name] = &meta.Package{
 			Name:     d.Name,
 			Version:  mod.Version,
-			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", d.Name, mod.Version))},
+			Checksum: meta.Checksum{Content: []byte(fmt.Sprintf("%s-%s", d.Name, mod.Version))},
 		}
 		if len(d.Dependencies) != 0 {
-			mod.Modules = map[string]*models.Module{}
+			mod.Packages = map[string]*meta.Package{}
 			for _, depD := range d.Dependencies {
 				ar := strings.Split(strings.TrimSpace(depD), " ")
 				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
@@ -212,10 +213,10 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 				if extractVersion(version) == "*" {
 					continue
 				}
-				mod.Modules[name] = &models.Module{
+				mod.Packages[name] = &meta.Package{
 					Name:     name,
 					Version:  extractVersion(version),
-					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
+					Checksum: meta.Checksum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 				}
 			}
 		}
@@ -232,7 +233,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 
 		mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, m.metadata.Manifest[0]))
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
-		mod.CheckSum = &models.CheckSum{
+		mod.Checksum = meta.Checksum{
 			Algorithm: "SHA256",
 			Value:     h,
 		}

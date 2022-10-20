@@ -19,7 +19,6 @@ import (
 	"github.com/vifraa/gopom"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 // RepositoryUrl is the repository url
@@ -121,7 +120,7 @@ func updatePackageSuppier(project gopom.Project, mod *meta.Package, developers [
 }
 
 // Update package download location
-func updatePackageDownloadLocation(groupID string, project gopom.Project, mod *models.Module, distManagement gopom.DistributionManagement) {
+func updatePackageDownloadLocation(groupID string, project gopom.Project, mod *meta.Package, distManagement gopom.DistributionManagement) {
 	if len(distManagement.DownloadURL) > 0 && (strings.HasPrefix(distManagement.DownloadURL, "http") ||
 		strings.HasPrefix(distManagement.DownloadURL, "https")) {
 		mod.PackageDownloadLocation = distManagement.DownloadURL
@@ -167,7 +166,7 @@ func convertProjectLevelPackageToModule(project gopom.Project) meta.Package {
 		modVersion = project.Properties.Entries[version]
 	}
 
-	var mod meta.Package{}
+	var mod meta.Package
 	mod.Name = modName
 	mod.Version = modVersion
 	mod.Packages = map[string]*meta.Package{}
@@ -204,8 +203,8 @@ func findInPlugins(slice []gopom.Plugin, val string) bool {
 	return false
 }
 
-func createModule(groupID string, name string, version string, project gopom.Project) models.Module {
-	var mod models.Module
+func createModule(groupID string, name string, version string, project gopom.Project) meta.Package {
+	var mod meta.Package
 	modVersion := version
 	if strings.HasPrefix(version, "$") {
 		version1 := strings.TrimLeft(strings.TrimRight(version, "}"), "${")
@@ -216,9 +215,9 @@ func createModule(groupID string, name string, version string, project gopom.Pro
 	name = strings.TrimSpace(name)
 	mod.Name = strings.Replace(name, " ", "-", -1)
 	mod.Version = modVersion
-	mod.Modules = map[string]*models.Module{}
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
+	mod.Packages = map[string]*meta.Package{}
+	mod.Checksum = meta.Checksum{
+		Algorithm: meta.HashAlgoSHA1,
 		Value:     readCheckSum(name),
 	}
 	updatePackageSuppier(project, &mod, project.Developers)
@@ -258,22 +257,22 @@ func readAndLoadPomFile(fpath string) (gopom.Project, error) {
 	return project, nil
 }
 
-func getModule(modules []models.Module, name string) (models.Module, error) {
+func getModule(modules []meta.Package, name string) (meta.Package, error) {
 	for _, module := range modules {
 		if module.Name == name {
 			return module, nil
 		}
 	}
-	return models.Module{}, moduleNotFound
+	return meta.Package{}, moduleNotFound
 }
 
 // If parent pom.xml has modules information in it, go to individual modules pom.xml
-func convertPkgModulesToModule(existingModules []models.Module, fpath string, moduleName string, parentPom gopom.Project) ([]models.Module, error) {
-	var modules []models.Module
+func convertPkgModulesToModule(existingModules []meta.Package, fpath string, moduleName string, parentPom gopom.Project) ([]meta.Package, error) {
+	var modules []meta.Package
 	filePath := fpath + "/" + moduleName
 	project, err := readAndLoadPomFile(filePath)
 	if err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
 
 	parentMod := convertProjectLevelPackageToModule(project)
@@ -326,11 +325,11 @@ func convertPkgModulesToModule(existingModules []models.Module, fpath string, mo
 	return modules, nil
 }
 
-func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
+func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 	project, err := readAndLoadPomFile(fpath)
 	if err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
 	parentMod := convertProjectLevelPackageToModule(project)
 	parentMod.Root = true
@@ -515,8 +514,8 @@ func handlePkgs(text []string, tdList map[string][]string) {
 	}
 }
 
-func buildDependenciesGraph(modules []models.Module, tdList map[string][]string) {
-	moduleMap := map[string]models.Module{}
+func buildDependenciesGraph(modules []meta.Package, tdList map[string][]string) {
+	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 
 	for idx, module := range modules {
@@ -539,14 +538,14 @@ func buildDependenciesGraph(modules []models.Module, tdList map[string][]string)
 					continue
 				}
 
-				modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
+				modules[moduleIndex[moduleName]].Packages[depName] = &meta.Package{
 					Name:                    depModule.Name,
 					Version:                 depModule.Version,
 					Path:                    depModule.Path,
 					LocalPath:               depModule.LocalPath,
 					Supplier:                depModule.Supplier,
 					PackageURL:              depModule.PackageURL,
-					CheckSum:                depModule.CheckSum,
+					Checksum:                depModule.Checksum,
 					PackageHomePage:         depModule.PackageHomePage,
 					PackageDownloadLocation: depModule.PackageDownloadLocation,
 					LicenseConcluded:        depModule.LicenseConcluded,
