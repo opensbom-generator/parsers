@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/worker"
@@ -25,13 +26,13 @@ var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 type poetry struct {
 	metadata   models.PluginMetadata
-	rootModule *models.Module
+	rootModule *meta.Package
 	command    *helper.Cmd
 	basepath   string
 	version    string
 	pkgs       []worker.Packages
 	metainfo   map[string]worker.Metadata
-	allModules []models.Module
+	allModules []meta.Package
 }
 
 // New ...
@@ -93,7 +94,7 @@ func (m *poetry) SetRootModule(path string) error {
 }
 
 // Get Root Module ...
-func (m *poetry) GetRootModule(path string) (*models.Module, error) {
+func (m *poetry) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module := m.fetchRootModule()
 		m.rootModule = &module
@@ -102,7 +103,7 @@ func (m *poetry) GetRootModule(path string) (*models.Module, error) {
 }
 
 // List Used Modules...
-func (m *poetry) ListUsedModules(path string) ([]models.Module, error) {
+func (m *poetry) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
@@ -118,7 +119,7 @@ func (m *poetry) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // List Modules With Deps ...
-func (m *poetry) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *poetry) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -193,11 +194,11 @@ func (m *poetry) LoadModuleList(path string) error {
 	return err
 }
 
-func (m *poetry) fetchRootModule() models.Module {
+func (m *poetry) fetchRootModule() meta.Package {
 	for _, mod := range m.allModules {
 		if mod.Root {
 			return mod
 		}
 	}
-	return models.Module{}
+	return meta.Package{}
 }

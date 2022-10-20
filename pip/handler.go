@@ -3,10 +3,11 @@
 package pip
 
 import (
+	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/pip/pipenv"
+	"github.com/opensbom-generator/parsers/pip/poetry"
+	"github.com/opensbom-generator/parsers/pip/pyenv"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/pipenv"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/poetry"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/pyenv"
 )
 
 type pip struct {
@@ -61,16 +62,16 @@ func (m *pip) SetRootModule(path string) error {
 }
 
 // Get Root Module ...
-func (m *pip) GetRootModule(path string) (*models.Module, error) {
+func (m *pip) GetRootModule(path string) (*meta.Package, error) {
 	return m.plugin.GetRootModule(path)
 }
 
 // List Used Modules...
-func (m *pip) ListUsedModules(path string) ([]models.Module, error) {
+func (m *pip) ListUsedModules(path string) ([]meta.Package, error) {
 	return m.plugin.ListUsedModules(path)
 }
 
 // List Modules With Deps ...
-func (m *pip) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *pip) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	return m.plugin.ListModulesWithDeps(path, globalSettingFile)
 }
