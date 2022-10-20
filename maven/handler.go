@@ -10,13 +10,14 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type javamaven struct {
 	metadata   models.PluginMetadata
-	rootModule *models.Module
+	rootModule *meta.Package
 	command    *helper.Cmd
 }
 
@@ -91,7 +92,7 @@ func (m *javamaven) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *javamaven) GetRootModule(path string) (*models.Module, error) {
+func (m *javamaven) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module, err := m.getModule(path)
 		if err != nil {
@@ -105,7 +106,7 @@ func (m *javamaven) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListUsedModules...
-func (m *javamaven) ListUsedModules(path string) ([]models.Module, error) {
+func (m *javamaven) ListUsedModules(path string) ([]meta.Package, error) {
 	modules, err := convertPOMReaderToModules(path, true)
 
 	if err != nil {
@@ -117,7 +118,7 @@ func (m *javamaven) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -134,16 +135,16 @@ func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) (
 	return modules, nil
 }
 
-func (m *javamaven) getModule(path string) (models.Module, error) {
+func (m *javamaven) getModule(path string) (meta.Package, error) {
 	modules, err := convertPOMReaderToModules(path, false)
 
 	if err != nil {
 		log.Println(err)
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	if len(modules) == 0 {
-		return models.Module{}, errFailedToConvertModules
+		return meta.Package{}, errFailedToConvertModules
 	}
 
 	return modules[0], nil

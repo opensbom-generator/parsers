@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/vifraa/gopom"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
@@ -82,7 +83,7 @@ func getDependencyList() ([]string, error) {
 	return s, err
 }
 
-func updateLicenseInformationToModule(mod *models.Module) {
+func updateLicenseInformationToModule(mod *meta.Package) {
 	licensePkg, err := helper.GetLicenses(".")
 	if err == nil {
 		mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
@@ -93,7 +94,7 @@ func updateLicenseInformationToModule(mod *models.Module) {
 }
 
 // Update package supplier information
-func updatePackageSuppier(project gopom.Project, mod *models.Module, developers []gopom.Developer) {
+func updatePackageSuppier(project gopom.Project, mod *meta.Package, developers []gopom.Developer) {
 	// By Default set name as project name
 	if mod.Root {
 		if len(project.Name) > 0 {
@@ -106,11 +107,11 @@ func updatePackageSuppier(project gopom.Project, mod *models.Module, developers 
 
 		for _, developer := range developers {
 			if len(developer.Name) > 0 && len(developer.Email) > 0 {
-				mod.Supplier.Type = models.Person
+				mod.Supplier.Type = meta.Person
 				mod.Supplier.Name = developer.Name
 				mod.Supplier.Email = developer.Email
 			} else if len(developer.Email) == 0 && len(developer.Name) > 0 {
-				mod.Supplier.Type = models.Person
+				mod.Supplier.Type = meta.Person
 				mod.Supplier.Name = developer.Name
 			}
 		}
@@ -139,7 +140,7 @@ func updatePackageDownloadLocation(groupID string, project gopom.Project, mod *m
 	}
 }
 
-func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
+func convertProjectLevelPackageToModule(project gopom.Project) meta.Package {
 	// package to module
 	var modName string
 	if len(project.Name) == 0 {
@@ -166,12 +167,12 @@ func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 		modVersion = project.Properties.Entries[version]
 	}
 
-	var mod models.Module
+	var mod meta.Package{}
 	mod.Name = modName
 	mod.Version = modVersion
-	mod.Modules = map[string]*models.Module{}
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
+	mod.Packages = map[string]*meta.Package{}
+	mod.Checksum = meta.Checksum{
+		Algorithm: meta.HashAlgoSHA1,
 		Value:     readCheckSum(modName),
 	}
 	mod.Root = true
