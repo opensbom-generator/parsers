@@ -5,6 +5,7 @@ package composer
 import (
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
@@ -66,17 +67,17 @@ func (m *composer) SetRootModule(path string) error {
 }
 
 // GetRootModule ...
-func (m *composer) GetRootModule(path string) (*models.Module, error) {
+func (m *composer) GetRootModule(path string) (*meta.Package, error) {
 	return nil, nil
 }
 
 // ListModulesWithDeps ...
-func (m *composer) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *composer) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	return m.ListUsedModules(path)
 }
 
 // ListUsedModules...
-func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
+func (m *composer) ListUsedModules(path string) ([]meta.Package, error) {
 	modules, err := m.getModulesFromComposerLockFile(path)
 	if err != nil {
 		return nil, errFailedToReadComposerFile
