@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/cargo"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/composer"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/gem"
@@ -20,6 +19,9 @@ import (
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/swift"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/yarn"
+
+	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 )
 
 var (
@@ -28,7 +30,7 @@ var (
 	errFailedToReadModules = errors.New("failed to read modules")
 )
 
-var registeredPlugins []models.IPlugin
+var registeredPlugins []plugin.Plugin
 
 func init() {
 	registeredPlugins = append(registeredPlugins,
@@ -49,8 +51,8 @@ func init() {
 // Manager ...
 type Manager struct {
 	Config  Config
-	Plugin  models.IPlugin
-	modules []models.Module
+	Plugin  plugin.Plugin
+	modules []meta.Package
 }
 
 // Config ...
@@ -61,7 +63,7 @@ type Config struct {
 
 // New ...
 func New(cfg Config) ([]*Manager, error) {
-	var usePlugin models.IPlugin
+	var usePlugin plugin.Plugin
 	var managerSlice []*Manager
 	for _, plugin := range registeredPlugins {
 		if plugin.IsValid(cfg.Path) {
@@ -111,6 +113,6 @@ func (m *Manager) Run() error {
 }
 
 // GetSource ...
-func (m *Manager) GetSource() []models.Module {
+func (m *Manager) GetSource() []meta.Package {
 	return m.modules
 }

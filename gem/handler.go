@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type gem struct {
-	metadata   models.PluginMetadata
+	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 }
@@ -30,7 +30,7 @@ var errDependenciesNotFound, errInvalidProjectType = errors.New(
 // New ...
 func New() *gem {
 	return &gem{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Bundler",
 			Slug:       "bundler",
 			Manifest:   []string{"Gemfile", "Gemfile.lock", "gems.rb", "gems.locked"},
@@ -40,7 +40,7 @@ func New() *gem {
 }
 
 // GetMetadata ...
-func (g *gem) GetMetadata() models.PluginMetadata {
+func (g *gem) GetMetadata() plugin.Metadata {
 	return g.metadata
 }
 

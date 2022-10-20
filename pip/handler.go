@@ -7,11 +7,12 @@ import (
 	"github.com/opensbom-generator/parsers/pip/pipenv"
 	"github.com/opensbom-generator/parsers/pip/poetry"
 	"github.com/opensbom-generator/parsers/pip/pyenv"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+
+	"github.com/opensbom-generator/parsers/plugin"
 )
 
 type pip struct {
-	plugin models.IPlugin
+	plugin plugin.Plugin
 }
 
 // New ...
@@ -22,7 +23,7 @@ func New() *pip {
 }
 
 // Get Metadata ...
-func (m *pip) GetMetadata() models.PluginMetadata {
+func (m *pip) GetMetadata() plugin.Metadata {
 	return m.plugin.GetMetadata()
 }
 

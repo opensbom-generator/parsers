@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type mod struct {
-	metadata      models.PluginMetadata
+	metadata      plugin.Metadata
 	rootModule    *meta.Package
 	command       *helper.Cmd
 	cargoMetadata CargoMetadata
@@ -19,7 +19,7 @@ type mod struct {
 
 func New() *mod {
 	return &mod{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Cargo Modules",
 			Slug:       "cargo",
 			Manifest:   []string{CargoTomlFile},
@@ -27,7 +27,7 @@ func New() *mod {
 		},
 	}
 }
-func (m *mod) GetMetadata() models.PluginMetadata {
+func (m *mod) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type pkg struct {
-	metadata models.PluginMetadata
+	metadata plugin.Metadata
 }
 
 const (
@@ -25,7 +25,7 @@ const (
 // New creates a new Swift package instance
 func New() *pkg {
 	return &pkg{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "Swift Package Manager",
 			Slug:       "swift",
 			Manifest:   []string{ManifestFile},
@@ -48,7 +48,7 @@ func (m *pkg) GetVersion() (string, error) {
 }
 
 // GetMetadata returns root package information base on path given
-func (m *pkg) GetMetadata() models.PluginMetadata {
+func (m *pkg) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

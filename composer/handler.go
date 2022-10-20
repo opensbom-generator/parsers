@@ -6,19 +6,19 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type composer struct {
-	metadata models.PluginMetadata
+	metadata plugin.Metadata
 	command  *helper.Cmd
 }
 
 // New ...
 func New() *composer {
 	return &composer{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "composer Package Manager",
 			Slug:       "composer",
 			Manifest:   []string{COMPOSER_JSON_FILE_NAME},
@@ -28,7 +28,7 @@ func New() *composer {
 }
 
 // GetMetadata ...
-func (m *composer) GetMetadata() models.PluginMetadata {
+func (m *composer) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

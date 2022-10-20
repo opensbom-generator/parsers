@@ -88,7 +88,6 @@ func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]meta.Packag
 	decoder := json.NewDecoder(d.reader)
 	pathMap := map[string]bool{}
 	for {
-		//var m models.Module
 		var j JSONOutput
 		if err := decoder.Decode(&j); err != nil {
 			if err == io.EOF {

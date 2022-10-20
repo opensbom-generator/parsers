@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/worker"
 )
 
@@ -25,7 +25,7 @@ var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 type poetry struct {
-	metadata   models.PluginMetadata
+	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 	basepath   string
@@ -38,7 +38,7 @@ type poetry struct {
 // New ...
 func New() *poetry {
 	return &poetry{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:       "The Python Package Index (PyPI)",
 			Slug:       "poetry",
 			Manifest:   []string{manifestLockFile},
@@ -48,7 +48,7 @@ func New() *poetry {
 }
 
 // Get Metadata ...
-func (m *poetry) GetMetadata() models.PluginMetadata {
+func (m *poetry) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 

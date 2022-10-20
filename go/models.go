@@ -3,13 +3,14 @@
 package gomod
 
 import (
+	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type mod struct {
-	metadata   models.PluginMetadata
-	rootModule *models.Module
+	metadata   plugin.Metadata
+	rootModule *meta.Package
 	command    *helper.Cmd
 }
 

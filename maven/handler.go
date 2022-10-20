@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type javamaven struct {
-	metadata   models.PluginMetadata
+	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 }
@@ -24,7 +24,7 @@ type javamaven struct {
 // New ...
 func New() *javamaven {
 	return &javamaven{
-		metadata: models.PluginMetadata{
+		metadata: plugin.Metadata{
 			Name:     "Java Maven",
 			Slug:     "Java-Maven",
 			Manifest: []string{"pom.xml"},
@@ -36,7 +36,7 @@ func New() *javamaven {
 }
 
 // GetMetadata ...
-func (m *javamaven) GetMetadata() models.PluginMetadata {
+func (m *javamaven) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
