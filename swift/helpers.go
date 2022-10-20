@@ -10,12 +10,12 @@ import (
 
 	"golang.org/x/mod/semver"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
-func (description SwiftPackageDescription) Module() *models.Module {
-	mod := &models.Module{}
+func (description SwiftPackageDescription) Module() *meta.Package {
+	mod := &meta.Package{}
 
 	mod.Name = description.Name
 	mod.Root = true
@@ -27,8 +27,8 @@ func (description SwiftPackageDescription) Module() *models.Module {
 	return mod
 }
 
-func (dep SwiftPackageDependency) Module() *models.Module {
-	mod := &models.Module{}
+func (dep SwiftPackageDependency) Module() *meta.Package {
+	mod := &meta.Package{}
 	mod.Name = dep.Name
 	mod.PackageURL = strings.TrimSuffix(dep.Url, ".git")
 
@@ -48,7 +48,7 @@ func (dep SwiftPackageDependency) Module() *models.Module {
 	return mod
 }
 
-func setLicense(mod *models.Module, path string) error {
+func setLicense(mod *meta.Package, path string) error {
 	licensePkg, err := helper.GetLicenses(path)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func setLicense(mod *models.Module, path string) error {
 	return nil
 }
 
-func setVersion(mod *models.Module, path string) error {
+func setVersion(mod *meta.Package, path string) error {
 	cmd := exec.Command("git", "describe", "--tags", "--exact-match")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -92,7 +92,7 @@ func setVersion(mod *models.Module, path string) error {
 	return nil
 }
 
-func setCheckSum(mod *models.Module, path string) error {
+func setCheckSum(mod *meta.Package, path string) error {
 	cmd := exec.Command("git", "rev-parse", "HEAD")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -101,8 +101,8 @@ func setCheckSum(mod *models.Module, path string) error {
 	}
 
 	if len(output) > 0 {
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1, // FIXME: derive from git
+		mod.Checksum = meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1, // FIXME: derive from git
 			Value:     string(output),
 		}
 	}

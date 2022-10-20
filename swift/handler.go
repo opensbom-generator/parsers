@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
@@ -57,7 +58,7 @@ func (m *pkg) SetRootModule(path string) error {
 }
 
 // GetRootModule returns root package information base on path given
-func (m *pkg) GetRootModule(path string) (*models.Module, error) {
+func (m *pkg) GetRootModule(path string) (*meta.Package, error) {
 	cmd := exec.Command("swift", "package", "describe", "--type", "json")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -80,7 +81,7 @@ func (m *pkg) GetRootModule(path string) (*models.Module, error) {
 // in the given project directory,
 // this is a plain list of all used modules
 // (no nested or tree view)
-func (m *pkg) ListUsedModules(path string) ([]models.Module, error) {
+func (m *pkg) ListUsedModules(path string) ([]meta.Package, error) {
 	cmd := exec.Command("swift", "package", "show-dependencies", "--disable-automatic-resolution", "--format", "json")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -104,7 +105,7 @@ func (m *pkg) ListUsedModules(path string) ([]models.Module, error) {
 	}
 	recurse(root)
 
-	var collection []models.Module
+	var collection []meta.Package
 	for _, dep := range dependencies {
 		mod := dep.Module()
 		collection = append(collection, *mod)
@@ -119,8 +120,8 @@ func (m *pkg) ListUsedModules(path string) ([]models.Module, error) {
 // this is a one level only list of all used modules,
 // and each with its direct dependency only
 // (similar output to ListUsedModules but with direct dependency only)
-func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
-	var collection []models.Module
+func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+	var collection []meta.Package
 
 	mod, err := m.GetRootModule(path)
 	if err != nil {
