@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"github.com/spdx/spdx-sbom-generator/pkg/reader"
@@ -91,13 +92,13 @@ func (m *npm) SetRootModule(path string) error {
 }
 
 // GetRootModule return root package information ex. Name, Version
-func (m *npm) GetRootModule(path string) (*models.Module, error) {
+func (m *npm) GetRootModule(path string) (*meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
 		return nil, err
 	}
-	mod := &models.Module{}
+	mod := &meta.Package{}
 
 	splitedPath := strings.Split(path, "/")
 	mod.Name = splitedPath[len(splitedPath)-1]
@@ -126,7 +127,7 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 		mod.PackageDownloadLocation = "NONE"
 	}
 
-	mod.Modules = map[string]*models.Module{}
+	mod.Packages = map[string]*meta.Package{}
 
 	mod.Copyright = getCopyright(path)
 	modLic, err := helper.GetLicenses(path)
@@ -144,18 +145,18 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListUsedModules return brief info of installed modules, Name and Version
-func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
+func (m *npm) ListUsedModules(path string) ([]meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
 
-	modules := make([]models.Module, 0)
+	modules := make([]meta.Package, 0)
 	deps := pkResult["dependencies"].(map[string]interface{})
 
 	for k, v := range deps {
-		var mod models.Module
+		var mod meta.Package
 		mod.Name = k
 		mod.Version = strings.TrimPrefix(v.(string), "^")
 		modules = append(modules, mod)
@@ -165,7 +166,7 @@ func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps return all info of installed modules
-func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	pk := lockFile
 	if helper.Exists(filepath.Join(path, shrink)) {
 		pk = shrink
@@ -174,7 +175,7 @@ func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]mode
 	r := reader.New(filepath.Join(path, pk))
 	pkResults, err := r.ReadJson()
 	if err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
 
 	deps, ok := pkResults["packages"].(map[string]interface{})
@@ -185,14 +186,14 @@ func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]mode
 	return m.buildDependencies(path, deps)
 }
 
-func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
+func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
 		return modules, err
 	}
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
-	de.CheckSum = &models.CheckSum{
+	de.Checksum = meta.Checksum{
 		Algorithm: "SHA256",
 		Value:     h,
 	}
@@ -210,7 +211,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 	for key, dd := range allDeps {
 		depName := strings.TrimPrefix(key, "@")
 		for nkey := range dd {
-			var mod models.Module
+			var mod meta.Package
 			d := dd[nkey].(map[string]interface{})
 			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"), "="))
 			mod.Version = strings.Split(mod.Version, " ")[0]
@@ -229,13 +230,13 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 
 			mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], key, m.metadata.Manifest[0]))
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
-			mod.CheckSum = &models.CheckSum{
+			mod.Checksum = meta.Package{
 				Algorithm: "SHA256",
 				Value:     h,
 			}
 
 			mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
-			mod.Modules = map[string]*models.Module{}
+			mod.Modules = map[string]*meta.Package{}
 			if dd["requires"] != nil {
 				modDeps := dd["requires"].(map[string]interface{})
 				deps := getPackageDependencies(modDeps, "requires")
@@ -308,8 +309,8 @@ func getLicenseFile(path string) string {
 	return ""
 }
 
-func getPackageDependencies(modDeps map[string]interface{}, t string) map[string]*models.Module {
-	m := make(map[string]*models.Module)
+func getPackageDependencies(modDeps map[string]interface{}, t string) map[string]*meta.Package {
+	m := make(map[string]*meta.Package)
 	for k, v := range modDeps {
 		name := strings.TrimPrefix(k, "@")
 		version := ""
@@ -319,10 +320,10 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 		if t == "requires" {
 			version = strings.TrimPrefix(v.(string), "^")
 		}
-		m[k] = &models.Module{
+		m[k] = &meta.Package{
 			Name:     name,
 			Version:  version,
-			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
+			Checksum: meta.Checksum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 		}
 	}
 	return m
