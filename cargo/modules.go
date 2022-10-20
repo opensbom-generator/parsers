@@ -7,12 +7,12 @@ import (
 	"net/mail"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
-func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) error {
-	moduleMap := map[string]models.Module{}
+func addDepthModules(modules []meta.Package, cargoPackages []CargoPackage) error {
+	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 	for idx, module := range modules {
 		moduleMap[module.Name] = module
@@ -47,14 +47,14 @@ func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) erro
 				continue
 			}
 
-			modules[rootModuleIndex].Modules[subModuleName] = &models.Module{
+			modules[rootModuleIndex].Packages[subModuleName] = &meta.Package{
 				Name:             subModule.Name,
 				Version:          subModule.Version,
 				Path:             subModule.Path,
 				LocalPath:        subModule.LocalPath,
 				Supplier:         subModule.Supplier,
 				PackageURL:       subModule.PackageURL,
-				CheckSum:         subModule.CheckSum,
+				Checksum:         subModule.Checksum,
 				PackageHomePage:  subModule.PackageHomePage,
 				LicenseConcluded: subModule.LicenseConcluded,
 				LicenseDeclared:  subModule.LicenseDeclared,
@@ -64,17 +64,14 @@ func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) erro
 				PackageComment:   subModule.PackageComment,
 				Root:             subModule.Root,
 			}
-
 		}
-
 	}
 
 	return nil
 }
 
-func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]models.Module, error) {
-
-	var collection []models.Module
+func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]meta.Package, error) {
+	var collection []meta.Package
 
 	for _, dep := range cargoPackages {
 		module := convertCargoPackageToModule(dep)
@@ -88,25 +85,25 @@ func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]models.Module
 	return collection, nil
 }
 
-func convertCargoPackageToModule(dep CargoPackage) models.Module {
+func convertCargoPackageToModule(dep CargoPackage) meta.Package {
 	localPath := convertToLocalPath(dep.ManifestPath)
 	supplier := getPackageSupplier(dep.Authors, dep.Name)
 	donwloadURL := getPackageDownloadLocation(dep)
 
-	module := models.Module{
+	module := meta.Package{
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       false,
 		PackageURL: formatPackageURL(dep),
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
 		},
 		LocalPath:               localPath,
 		PackageHomePage:         dep.Homepage,
 		Supplier:                supplier,
 		PackageDownloadLocation: donwloadURL,
-		Modules:                 map[string]*models.Module{},
+		Packages:                map[string]*meta.Package{},
 	}
 
 	licensePkg, err := helper.GetLicenses(localPath)
@@ -140,28 +137,28 @@ func getPackageDownloadLocation(dep CargoPackage) string {
 	return ""
 }
 
-func getPackageSupplier(authors []string, defaultValue string) models.SupplierContact {
+func getPackageSupplier(authors []string, defaultValue string) meta.Supplier {
 	if len(authors) == 0 {
-		return models.SupplierContact{
+		return meta.Supplier{
 			Name: defaultValue,
 		}
 	}
 
-	var supplier models.SupplierContact
+	var supplier meta.Supplier
 
 	mainAuthor := authors[0]
 	author, _ := mail.ParseAddress(mainAuthor)
 
 	if author != nil {
-		supplier = models.SupplierContact{
+		supplier = meta.Supplier{
 			Name:  author.Name,
 			Email: author.Address,
-			Type:  models.Person,
+			Type:  meta.Person,
 		}
 	}
 
 	if supplier.Email == "" {
-		supplier.Type = models.Organization
+		supplier.Type = meta.Organization
 	}
 
 	if supplier.Name == "" {
@@ -175,15 +172,15 @@ func getPackageSupplier(authors []string, defaultValue string) models.SupplierCo
 	return supplier
 }
 
-func (m *mod) getRootModule(path string) (models.Module, error) {
+func (m *mod) getRootModule(path string) (meta.Package, error) {
 	name, err := m.getRootProjectName(path)
 	if err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	cargoMetadata, err := m.getCargoMetadata(path)
 	if err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	packages := cargoMetadata.Packages
@@ -192,23 +189,23 @@ func (m *mod) getRootModule(path string) (models.Module, error) {
 	return mod, nil
 }
 
-func convertCargoPackageToRootModule(dep CargoPackage) models.Module {
+func convertCargoPackageToRootModule(dep CargoPackage) meta.Package {
 
 	localPath := convertToLocalPath(dep.ManifestPath)
 
-	module := models.Module{
+	module := meta.Package{
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       true,
 		PackageURL: formatPackageURL(dep),
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
 		},
 		LocalPath:               localPath,
 		PackageHomePage:         removeURLProtocol(dep.Homepage),
 		Supplier:                getPackageSupplier(dep.Authors, dep.Name),
-		Modules:                 map[string]*models.Module{},
+		Packages:                map[string]*meta.Package{},
 		PackageDownloadLocation: dep.Repository,
 	}
 

@@ -5,13 +5,14 @@ package cargo
 import (
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type mod struct {
 	metadata      models.PluginMetadata
-	rootModule    *models.Module
+	rootModule    *meta.Package
 	command       *helper.Cmd
 	cargoMetadata CargoMetadata
 }
@@ -48,7 +49,7 @@ func (m *mod) GetVersion() (string, error) {
 	return m.command.Output()
 }
 
-func (m *mod) GetRootModule(path string) (*models.Module, error) {
+func (m *mod) GetRootModule(path string) (*meta.Package, error) {
 	if err := m.SetRootModule(path); err != nil {
 		return nil, err
 	}
@@ -56,8 +57,8 @@ func (m *mod) GetRootModule(path string) (*models.Module, error) {
 	return m.rootModule, nil
 }
 
-func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
-	var collection []models.Module
+func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
+	var collection []meta.Package
 
 	rootModule, err := m.GetRootModule(path)
 	if err != nil {
@@ -79,7 +80,7 @@ func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
 	return collection, nil
 }
 
-func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
