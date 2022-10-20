@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/opensbom-generator/parsers/meta"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 const vendorFolder = "vendor"
@@ -36,8 +36,8 @@ func NewDecoder(r io.Reader) *Decoder {
 
 // ConvertPlainReaderToModules...
 // todo: improve code below
-func (d *Decoder) ConvertPlainReaderToModules(modules []models.Module) error {
-	moduleMap := map[string]models.Module{}
+func (d *Decoder) ConvertPlainReaderToModules(modules []meta.Package) error {
+	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 	for idx, module := range modules {
 		moduleMap[module.Name] = module
@@ -61,14 +61,14 @@ func (d *Decoder) ConvertPlainReaderToModules(modules []models.Module) error {
 			continue
 		}
 
-		modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
+		modules[moduleIndex[moduleName]].Packages[depName] = &meta.Package{
 			Name:             depModule.Name,
 			Version:          depModule.Version,
 			Path:             depModule.Path,
 			LocalPath:        depModule.LocalPath,
 			Supplier:         depModule.Supplier,
 			PackageURL:       depModule.PackageURL,
-			CheckSum:         depModule.CheckSum,
+			Checksum:         depModule.Checksum,
 			PackageHomePage:  depModule.PackageHomePage,
 			LicenseConcluded: depModule.LicenseConcluded,
 			LicenseDeclared:  depModule.LicenseDeclared,
@@ -84,7 +84,7 @@ func (d *Decoder) ConvertPlainReaderToModules(modules []models.Module) error {
 }
 
 // ConvertJSONReaderToModules ...
-func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]models.Module) error {
+func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]meta.Package) error {
 	decoder := json.NewDecoder(d.reader)
 	pathMap := map[string]bool{}
 	for {
@@ -124,7 +124,7 @@ func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]models.Modu
 }
 
 // ConvertJSONReaderToSingleModule ...
-func (d *Decoder) ConvertJSONReaderToSingleModule(module *models.Module) error {
+func (d *Decoder) ConvertJSONReaderToSingleModule(module *meta.Package) error {
 	err := json.NewDecoder(d.reader).Decode(module)
 	if err == io.EOF {
 		return nil
@@ -133,21 +133,21 @@ func (d *Decoder) ConvertJSONReaderToSingleModule(module *models.Module) error {
 	return err
 }
 
-func buildModule(m *Module) (*models.Module, error) {
+func buildModule(m *Module) (*meta.Package, error) {
 	localDir := buildLocalPath(m.Path, m.Dir)
 	contentCheckSum := helper.BuildManifestContent(localDir)
-	module := models.Module{
+	module := meta.Package{
 		Name:                    helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
 		Version:                 m.Version,
 		LocalPath:               localDir,
 		PackageURL:              m.Path,
 		PackageDownloadLocation: buildDownloadURL(m.Path, m.Version),
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA256,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA256,
 			Content:   contentCheckSum,
 		},
-		Supplier: models.SupplierContact{
-			Type: models.Organization,
+		Supplier: meta.Supplier{
+			Type: meta.Organization,
 			Name: helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
 		},
 	}
@@ -163,7 +163,7 @@ func buildModule(m *Module) (*models.Module, error) {
 			module.OtherLicense = append(module.OtherLicense, licensePkg)
 		}
 	}
-	module.Modules = map[string]*models.Module{}
+	module.Packages = map[string]*meta.Package{}
 	return &module, nil
 }
 
