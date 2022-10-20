@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
@@ -57,43 +58,43 @@ func (m *gradle) GetVersion() (string, error) {
 	return string(out), nil
 }
 
-func (m *gradle) GetRootModule(path string) (*models.Module, error) {
+func (m *gradle) GetRootModule(path string) (*meta.Package, error) {
 	// this doesn't actually do anything and is not called by any
 	// orchestrator, should it still be in the interface?
 	return nil, fmt.Errorf("GetRootModule not implemented for java-gradle")
 }
 
-func (m *gradle) ListUsedModules(path string) ([]models.Module, error) {
+func (m *gradle) ListUsedModules(path string) ([]meta.Package, error) {
 	// this doesn't actually do anything and is not called by any
 	// orchestrator, should it still be in the interface?
 	return nil, fmt.Errorf("ListUsedModules not implemented for java-gradle")
 }
 
-func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	pi, err := getProjectInfo(path)
 	if err != nil {
 		return nil, err
 	}
-	rootModule := models.Module{
+	rootModule := meta.Package{
 		Name:    pi.name,
 		Version: pi.version,
-		Supplier: models.SupplierContact{
+		Supplier: meta.Supplier{
 			Type: "Group Id",
 			Name: pi.group,
 		},
-		Root:    true,
-		Modules: make(map[string]*models.Module),
+		Root:     true,
+		Packages: make(map[string]*meta.Package),
 	}
 	// mediocre effort to read git info
 	origin, sha1, err := getGitInfo(path)
 	if err != nil {
-		rootModule.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgorithm("None"),
+		rootModule.Checksum = meta.Checksum{
+			Algorithm: meta.HashAlgorithm("None"),
 			Value:     "none",
 		}
 	} else {
-		rootModule.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
+		rootModule.Checksum = meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1,
 			Value:     sha1,
 		}
 		rootModule.PackageDownloadLocation = origin
@@ -105,9 +106,9 @@ func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]m
 	return all, nil
 }
 
-func getDependencyModules(project models.Module, path string) ([]models.Module, error) {
-	modsMap := map[string]*models.Module{}
-	mods := []models.Module{project}
+func getDependencyModules(project meta.Package, path string) ([]meta.Package, error) {
+	modsMap := map[string]*meta.Package{}
+	mods := []meta.Package{project}
 
 	deps, err := getDependencies(path)
 	if err != nil {
@@ -160,8 +161,8 @@ func getDependencyModules(project models.Module, path string) ([]models.Module, 
 }
 
 // generate gradle dependency module (non-root)
-func generateModule(name, depURL string) (models.Module, error) {
-	mod := models.Module{}
+func generateModule(name, depURL string) (meta.Package, error) {
+	mod := meta.Package{}
 	groupId, artifactId, version, err := splitDep(name)
 	if err != nil {
 		return mod, err
@@ -170,18 +171,18 @@ func generateModule(name, depURL string) (models.Module, error) {
 	if err != nil {
 		return mod, err
 	}
-	mod.Supplier = models.SupplierContact{
+	mod.Supplier = meta.Supplier{
 		Type: "Group Id",
 		Name: groupId,
 	}
 	mod.Name = artifactId
 	mod.Version = version
 	mod.PackageDownloadLocation = depURL
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
+	mod.Checksum = meta.Checksum{
+		Algorithm: meta.HashAlgoSHA1,
 		Value:     sha1,
 	}
-	mod.Modules = make(map[string]*models.Module)
+	mod.Packages = make(map[string]*meta.Package)
 	mod.Root = false
 
 	return mod, nil
