@@ -18,10 +18,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/opensbom-generator/parsers/meta"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 var (
@@ -118,8 +118,7 @@ type (
 )
 
 // Returns the root module
-func getGemRootModule(path string) (*models.Module, error) {
-
+func getGemRootModule(path string) (*meta.Package, error) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
@@ -128,16 +127,16 @@ func getGemRootModule(path string) (*models.Module, error) {
 	wg.Wait()
 
 	rootPath = &path
-	rootModule := models.Module{}
-	rootModule.Modules = make(map[string]*models.Module)
+	rootModule := meta.Package{}
+	rootModule.Packages = make(map[string]*meta.Package)
 	spec, err := getSpecDependencies(path)
 	if err != nil {
 		return nil, err
 	}
-	var supplier models.SupplierContact
+	var supplier meta.Supplier
 	authors := spec.Authors
 	if len(authors) > 0 {
-		supplier.Type = models.Person
+		supplier.Type = meta.Person
 		supplier.Name = authors[0]
 	}
 
@@ -150,8 +149,8 @@ func getGemRootModule(path string) (*models.Module, error) {
 	rootModule.PackageHomePage = cleanURI(spec.HomePage)
 	rootModule.PackageDownloadLocation = cleanURI(spec.HomePage)
 	rootModule.PackageURL = cleanURI(spec.HomePage)
-	rootModule.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA256,
+	rootModule.Checksum = meta.Checksum{
+		Algorithm: meta.HashAlgoSHA256,
 		Value:     spec.Checksum,
 	}
 
@@ -159,18 +158,17 @@ func getGemRootModule(path string) (*models.Module, error) {
 }
 
 // Returns the root module and associated dependencies
-func listGemRootModule(path string) ([]models.Module, error) {
-
+func listGemRootModule(path string) ([]meta.Package, error) {
 	rootPath = &path
-	modules := make([]models.Module, 0)
+	modules := make([]meta.Package, 0)
 	noSpecs := make(map[string]bool)
 
 	layerOneGems,
 		layerTwoGems,
 		layerThreeGems :=
-		make([]models.Module, 0),
-		make([]models.Module, 0),
-		make([]models.Module, 0)
+		make([]meta.Package, 0),
+		make([]meta.Package, 0),
+		make([]meta.Package, 0)
 
 	_1stLayerMapped, _2ndLayerMapped, _3rdLayerMapped :=
 		make(map[string]bool),
@@ -178,7 +176,7 @@ func listGemRootModule(path string) ([]models.Module, error) {
 		make(map[string]bool)
 
 	var firstLayerModule,
-		secondLayerModule models.Module
+		secondLayerModule meta.Package
 
 	// Parent Layer - Root
 	rootModule, err := getGemRootModule(path)
@@ -239,7 +237,7 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 		}
 
-		rootModule.Modules[dep.Name] = &parentLayerModule
+		rootModule.Packages[dep.Name] = &parentLayerModule
 		modules = append(modules, parentLayerModule)
 
 	}
@@ -259,15 +257,15 @@ func listGemRootModule(path string) ([]models.Module, error) {
 }
 
 // Parses spec info into module object
-func parseSpec(spec Spec) models.Module {
+func parseSpec(spec Spec) meta.Package {
 
-	var supplier models.SupplierContact
+	var supplier meta.Supplier
 	authors := spec.Authors
 	if len(authors) > 0 {
-		supplier.Type = models.Person
+		supplier.Type = meta.Person
 		supplier.Name = authors[0]
 	}
-	return models.Module{
+	return meta.Package{
 		Name:                    gemName(spec.Name),
 		Version:                 spec.Version,
 		Root:                    false,
@@ -275,25 +273,25 @@ func parseSpec(spec Spec) models.Module {
 		PackageDownloadLocation: cleanURI(spec.HomePage),
 		Supplier:                supplier,
 		PackageURL:              cleanURI(spec.HomePage),
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA256,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA256,
 			Value:     spec.Checksum,
 		},
-		Modules: make(map[string]*models.Module),
+		Packages: make(map[string]*meta.Package),
 	}
 
 }
 
 // Adds a new layer to the dependency tree
-func addGemLayer(descendant Spec, name string, parent *models.Module, layer map[string]bool, gems []models.Module) ([]models.Module, models.Module) {
+func addGemLayer(descendant Spec, name string, parent *meta.Package, layer map[string]bool, gems []meta.Package) ([]meta.Package, meta.Package) {
 	descendantModule := parseSpec(descendant)
 	setLicenseInfo(descendant.GemLocationDir, &descendantModule)
 	return setChildModule(name, parent, &descendantModule, layer, gems), descendantModule
 }
 
 // Sets the child of a parent module
-func setChildModule(name string, parent, child *models.Module, layer map[string]bool, gems []models.Module) []models.Module {
-	parent.Modules[name] = child
+func setChildModule(name string, parent, child *meta.Package, layer map[string]bool, gems []meta.Package) []meta.Package {
+	parent.Packages[name] = child
 	if !layer[child.Name] {
 		gems = append(gems, *child)
 		layer[child.Name] = true
@@ -302,7 +300,7 @@ func setChildModule(name string, parent, child *models.Module, layer map[string]
 }
 
 // Sets license info from generic helper
-func setLicenseInfo(path string, module *models.Module) {
+func setLicenseInfo(path string, module *meta.Package) {
 
 	licensePkg, err := helper.GetLicenses(path)
 	if err == nil {
@@ -564,7 +562,7 @@ func isDuplicate(value string, spec Spec) bool {
 	return skip
 }
 
-//  Builds Dependency Tree from Gemfile.lock
+// Builds Dependency Tree from Gemfile.lock
 func BuildLockDependencyTree(rows []string) {
 
 	var startIndex, specPosition int
