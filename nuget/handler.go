@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
@@ -149,9 +150,9 @@ func (m *nuget) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *nuget) GetRootModule(path string) (*models.Module, error) {
+func (m *nuget) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
-		module := models.Module{}
+		module := meta.Package{}
 		projectPath := m.GetProjectManifestPath(path)
 		pathExtension := filepath.Ext(projectPath)
 		if helper.Exists(projectPath) {
@@ -159,8 +160,8 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 			rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
 			module.Name = rootProjectName
 			module.Root = true
-			module.CheckSum = &models.CheckSum{
-				Algorithm: models.HashAlgoSHA256,
+			module.Checksum = meta.Checksum{
+				Algorithm: meta.HashAlgoSHA256,
 				Content:   []byte(fmt.Sprintf("%s%s", module.Name, module.Version)),
 			}
 			module.Supplier.Name = rootProjectName
@@ -172,8 +173,8 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
-	var modules []models.Module
+func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+	var modules []meta.Package
 	projectPath := m.GetProjectManifestPath(path)
 	projectPaths, err := getProjectPaths(projectPath)
 	if err != nil {
@@ -358,8 +359,8 @@ func getProjectPaths(path string) ([]string, error) {
 }
 
 // buildModule .. set the properties
-func (m *nuget) buildModule(name string, version string, dependencies map[string]string) (models.Module, error) {
-	var module models.Module
+func (m *nuget) buildModule(name string, version string, dependencies map[string]string) (meta.Package, error) {
+	var module meta.Package
 	module.Name = name
 	module.Version = version
 	//get the hash checksum
@@ -399,16 +400,16 @@ func (m *nuget) buildModule(name string, version string, dependencies map[string
 		}
 	}
 	// set dependencies
-	dependencyModules := map[string]*models.Module{}
+	dependencyModules := map[string]*meta.Package{}
 	for dName, dVersion := range dependencies {
 		checkSum, err := getHashCheckSum(name, version)
 		if err != nil {
 			return module, err
 		}
-		dependencyModules[dName] = &models.Module{
+		dependencyModules[dName] = &meta.Package{
 			Name:     dName,
 			Version:  dVersion,
-			CheckSum: checkSum,
+			Checksum: checkSum,
 		}
 	}
 	module.Modules = dependencyModules
@@ -474,7 +475,7 @@ func getNugetSpec(name string, version string) (*NugetSpec, error) {
 }
 
 // getHashCheckSum ...
-func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
+func getHashCheckSum(name string, version string) (*meta.Checksum, error) {
 	var fileData []byte
 	specFileName := getCachedSpecFilename(name, version)
 	if specFileName != "" {
@@ -500,8 +501,8 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 		}
 	}
 	if fileData != nil {
-		return &models.CheckSum{
-			Algorithm: models.HashAlgoSHA256,
+		return &meta.Checksum{
+			Algorithm: meta.HashAlgoSHA256,
 			Content:   fileData,
 		}, nil
 	}
@@ -523,8 +524,8 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 		return nil, err
 	}
 	if body != nil {
-		return &models.CheckSum{
-			Algorithm: models.HashAlgoSHA256,
+		return &meta.Checksum{
+			Algorithm: meta.HashAlgoSHA256,
 			Content:   fileData,
 		}, nil
 	}
