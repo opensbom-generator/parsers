@@ -9,13 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type gem struct {
 	metadata   models.PluginMetadata
-	rootModule *models.Module
+	rootModule *meta.Package
 	command    *helper.Cmd
 }
 
@@ -95,7 +96,6 @@ func (g *gem) GetVersion() (string, error) {
 
 // SetRootModule ...
 func (g *gem) SetRootModule(path string) error {
-
 	module, err := g.GetRootModule(path)
 	if err != nil {
 		return err
@@ -107,28 +107,28 @@ func (g *gem) SetRootModule(path string) error {
 }
 
 // GetRootModule...
-func (g *gem) GetRootModule(path string) (*models.Module, error) {
+func (g *gem) GetRootModule(path string) (*meta.Package, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
-		return &models.Module{}, err
+		return &meta.Package{}, err
 	}
 	return getGemRootModule(path)
 }
 
 // GetModule ...
-func (g *gem) GetModule(path string) ([]models.Module, error) {
+func (g *gem) GetModule(path string) ([]meta.Package, error) {
 	return nil, nil
 }
 
 // ListUsedModules ...
-func (g *gem) ListUsedModules(path string) ([]models.Module, error) {
+func (g *gem) ListUsedModules(path string) ([]meta.Package, error) {
 	var globalSettingFile string
 	return g.ListModulesWithDeps(path, globalSettingFile)
 }
 
 // ListModulesWithDeps ...
-func (g *gem) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+func (g *gem) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
-		return []models.Module{}, err
+		return []meta.Package{}, err
 	}
 	return listGemRootModule(path)
 }
