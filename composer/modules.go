@@ -10,18 +10,18 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
-func (m *composer) getRootProjectInfo(path string) (models.Module, error) {
+func (m *composer) getRootProjectInfo(path string) (meta.Package, error) {
 	if err := m.buildCmd(projectInfoCmd, path); err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	buffer := new(bytes.Buffer)
 	if err := m.command.Execute(buffer); err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 	defer buffer.Reset()
 
@@ -29,21 +29,21 @@ func (m *composer) getRootProjectInfo(path string) (models.Module, error) {
 
 	err := json.NewDecoder(buffer).Decode(&projectInfo)
 	if err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 	if projectInfo.Name == "" {
-		return models.Module{}, errRootProject
+		return meta.Package{}, errRootProject
 	}
 
 	module, err := convertProjectInfoToModule(projectInfo, path)
 	if err != nil {
-		return models.Module{}, err
+		return meta.Package{}, err
 	}
 
 	return module, nil
 }
 
-func convertProjectInfoToModule(project ComposerProjectInfo, path string) (models.Module, error) {
+func convertProjectInfoToModule(project ComposerProjectInfo, path string) (meta.Package, error) {
 
 	version := normalizePackageVersion(project.Versions[0])
 	packageUrl := genComposerUrl(project.Name, version)
@@ -59,13 +59,13 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (model
 	name := getName(project.Name)
 	supplier := rootProjectSupplier(name)
 
-	module := models.Module{
+	module := meta.Package{
 		Name:       name,
 		Version:    version,
 		Root:       true,
 		PackageURL: packageUrl,
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
 		PackageDownloadLocation: packageDownloadLocation,
@@ -105,19 +105,19 @@ func rootPackageDownloadLocation(defaultValue string) string {
 	return packageDownloadLocation
 }
 
-func rootProjectSupplier(projectName string) models.SupplierContact {
+func rootProjectSupplier(projectName string) meta.Supplier {
 
 	composerJson, _ := getComposerJSONFileData()
 	if len(composerJson.Authors) > 0 {
 		author := composerJson.Authors[0]
-		return models.SupplierContact{
+		return meta.Supplier{
 			Name:  author.Name,
 			Email: author.Email,
-			Type:  models.Person,
+			Type:  meta.Person,
 		}
 	}
 
-	return models.SupplierContact{
+	return meta.Supplier{
 		Name:  projectName,
 		Email: "",
 	}
@@ -143,8 +143,8 @@ func (m *composer) getTreeListFromComposerShowTree(path string) (ComposerTreeLis
 	return tree, nil
 }
 
-func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []models.Module) bool {
-	moduleMap := map[string]models.Module{}
+func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []meta.Package) bool {
+	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 	for idx, module := range modules {
 		moduleMap[module.Name] = module
@@ -181,15 +181,15 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 	return true
 }
 
-func addSubModuleToAModule(modules []models.Module, moduleIndex int, subModule models.Module) {
-	modules[moduleIndex].Modules[subModule.Name] = &models.Module{
+func addSubModuleToAModule(modules []meta.Package, moduleIndex int, subModule meta.Package) {
+	modules[moduleIndex].Packages[subModule.Name] = &meta.Package{
 		Name:             subModule.Name,
 		Version:          subModule.Version,
 		Path:             subModule.Path,
 		LocalPath:        subModule.LocalPath,
 		Supplier:         subModule.Supplier,
 		PackageURL:       subModule.PackageURL,
-		CheckSum:         subModule.CheckSum,
+		Checksum:         subModule.Checksum,
 		PackageHomePage:  subModule.PackageHomePage,
 		LicenseConcluded: subModule.LicenseConcluded,
 		LicenseDeclared:  subModule.LicenseDeclared,
@@ -202,7 +202,6 @@ func addSubModuleToAModule(modules []models.Module, moduleIndex int, subModule m
 }
 
 func getComposerLockFileData() (ComposerLockFile, error) {
-
 	raw, err := ioutil.ReadFile(COMPOSER_LOCK_FILE_NAME)
 	if err != nil {
 		return ComposerLockFile{}, err
@@ -244,9 +243,8 @@ func getPackageJSONFileData() (PackageJSONObject, error) {
 	return fileData, nil
 }
 
-func (m *composer) getModulesFromComposerLockFile(path string) ([]models.Module, error) {
-
-	modules := make([]models.Module, 0)
+func (m *composer) getModulesFromComposerLockFile(path string) ([]meta.Package, error) {
+	modules := make([]meta.Package, 0)
 
 	info, err := getComposerLockFileData()
 	if err != nil {
@@ -277,21 +275,20 @@ func (m *composer) getModulesFromComposerLockFile(path string) ([]models.Module,
 	return modules, nil
 }
 
-func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
-
-	module := models.Module{
+func convertLockPackageToModule(dep ComposerLockPackage) meta.Package {
+	module := meta.Package{
 		Version:                 normalizePackageVersion(dep.Version),
 		Name:                    getName(dep.Name),
 		Root:                    false,
 		PackageURL:              genUrlFromComposerPackage(dep),
 		PackageDownloadLocation: dep.Source.URL,
-		CheckSum: &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
+		Checksum: meta.Checksum{
+			Algorithm: meta.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),
 		},
 		Supplier:  getAuthorFromComposerLockFileDep(dep),
 		LocalPath: getLocalPath(dep),
-		Modules:   map[string]*models.Module{},
+		Packages:  map[string]*meta.Package{},
 	}
 	path := getLocalPath(dep)
 	licensePkg, err := helper.GetLicenses(path)
@@ -309,31 +306,29 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 	return module
 }
 
-func getAuthorFromComposerLockFileDep(dep ComposerLockPackage) models.SupplierContact {
-
+func getAuthorFromComposerLockFileDep(dep ComposerLockPackage) meta.Supplier {
 	authors := dep.Authors
 	if len(authors) == 0 {
-		return models.SupplierContact{
+		return meta.Supplier{
 			Name: getName(dep.Name),
-			Type: models.Organization,
+			Type: meta.Organization,
 		}
 	}
 	author := authors[0]
-	pckAuthor := models.SupplierContact{
+	pckAuthor := meta.Supplier{
 		Name:  author.Name,
 		Email: author.Email,
-		Type:  models.Person,
+		Type:  meta.Person,
 	}
 
 	if pckAuthor.Email == "" {
-		pckAuthor.Type = models.Organization
+		pckAuthor.Type = meta.Organization
 	}
 
 	return pckAuthor
 }
 
 func getName(moduleName string) string {
-
 	groupNames := strings.Split(moduleName, "/")
 
 	if len(groupNames) > 1 {
