@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"path/filepath"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
 )

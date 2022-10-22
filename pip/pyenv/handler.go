@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/pip/worker"
 	"github.com/opensbom-generator/parsers/plugin"

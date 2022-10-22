@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
 // Virtual env constants
