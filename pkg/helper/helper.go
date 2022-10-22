@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
-	"github.com/opensbom-generator/parsers/license"
+	"github.com/opensbom-generator/parsers/internal/license"
 	"github.com/spdx/spdx-sbom-generator/pkg/licenses"
 
 	log "github.com/sirupsen/logrus"
