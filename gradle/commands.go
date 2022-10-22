@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
 // use newGradleExec to instantiate

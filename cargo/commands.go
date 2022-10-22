@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
 type command string

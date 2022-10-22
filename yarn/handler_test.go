@@ -99,7 +99,7 @@ func TestListAllModules(t *testing.T) {
 	count := 0
 	for _, mod := range mods {
 		if mod.Name == "axios" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))))
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 			assert.Equal(t, "0.19.2", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, meta.HashAlgorithm("SHA256"), mod.Checksum.Algorithm)
@@ -110,7 +110,7 @@ func TestListAllModules(t *testing.T) {
 			continue
 		}
 		if mod.Name == "react" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))))
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
 			assert.Equal(t, "16.14.0", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/react/-/react-16.14.0.tgz", mod.PackageDownloadLocation)
@@ -122,7 +122,7 @@ func TestListAllModules(t *testing.T) {
 			continue
 		}
 		if mod.Name == "react-dom" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))))
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
 			assert.Equal(t, "16.14.0", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/react-dom/-/react-dom-16.14.0.tgz", mod.PackageDownloadLocation)

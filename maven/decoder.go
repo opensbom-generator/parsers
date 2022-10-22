@@ -18,7 +18,7 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/vifraa/gopom"
 
-	"github.com/opensbom-generator/parsers/helper"
+	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
 // RepositoryUrl is the repository url
