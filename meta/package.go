@@ -11,7 +11,7 @@ import (
 	"hash"
 	"strings"
 
-	"github.com/opensbom-generator/parsers/license"
+	"github.com/opensbom-generator/parsers/internal/license"
 )
 
 // Package is the package abstraction that the parsers return
