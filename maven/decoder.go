@@ -289,14 +289,14 @@ func convertPkgModulesToModule(existingModules []meta.Package, fpath string, mod
 			if !found1 {
 				mod := createModule(element.GroupID, name, element.Version, project)
 				modules = append(modules, mod)
-				parentMod.Modules[mod.Name] = &mod
+				parentMod.Packages[mod.Name] = &mod
 			}
 		}
 
 		if found || found1 {
 			module, err := getModule(existingModules, name)
 			if err == nil {
-				parentMod.Modules[name] = &module
+				parentMod.Packages[name] = &module
 			}
 		}
 	}
@@ -311,14 +311,14 @@ func convertPkgModulesToModule(existingModules []meta.Package, fpath string, mod
 			if !found1 {
 				mod := createModule(element.GroupID, name, element.Version, project)
 				modules = append(modules, mod)
-				parentMod.Modules[mod.Name] = &mod
+				parentMod.Packages[mod.Name] = &mod
 			}
 		}
 
 		if found || found1 {
 			module, err := getModule(existingModules, name)
 			if err == nil {
-				parentMod.Modules[name] = &module
+				parentMod.Packages[name] = &module
 			}
 		}
 	}
@@ -339,14 +339,14 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
 		mod := createModule(dependencyManagement.GroupID, dependencyManagement.ArtifactID, dependencyManagement.Version, project)
 		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
+		parentMod.Packages[mod.Name] = &mod
 	}
 
 	// iterate over dependencies
 	for _, dep := range project.Dependencies {
 		mod := createModule(dep.GroupID, dep.ArtifactID, dep.Version, project)
 		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
+		parentMod.Packages[mod.Name] = &mod
 	}
 
 	// iterate over Plugins
@@ -355,7 +355,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 		if len(plugin.GroupID) == 0 {
 			mod := createModule(plugin.GroupID, plugin.ArtifactID, plugin.Version, project)
 			modules = append(modules, mod)
-			parentMod.Modules[mod.Name] = &mod
+			parentMod.Packages[mod.Name] = &mod
 		}
 	}
 
@@ -363,7 +363,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 	for _, plugin := range project.Build.PluginManagement.Plugins {
 		mod := createModule(plugin.GroupID, plugin.ArtifactID, plugin.Version, project)
 		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
+		parentMod.Packages[mod.Name] = &mod
 	}
 
 	dependencyList, err := getDependencyList()
@@ -405,7 +405,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 			version := strings.Split(dependencyList[i], ":")[3]
 			mod := createModule(strings.TrimSpace(groupID), dependencyItem, version, project)
 			modules = append(modules, mod)
-			parentMod.Modules[mod.Name] = &mod
+			parentMod.Packages[mod.Name] = &mod
 		}
 		i++
 	}

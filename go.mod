@@ -3,6 +3,7 @@ module github.com/opensbom-generator/parsers
 go 1.19
 
 require (
+	github.com/go-enry/go-license-detector/v4 v4.2.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spdx/spdx-sbom-generator v0.0.15
@@ -19,7 +20,6 @@ require (
 	github.com/dgryski/go-minhash v0.0.0-20170608043002-7fe510aff544 // indirect
 	github.com/ekzhu/minhash-lsh v0.0.0-20171225071031-5c06ee8586a1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/go-enry/go-license-detector/v4 v4.2.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/hhatto/gorst v0.0.0-20181029133204-ca9f730cac5b // indirect

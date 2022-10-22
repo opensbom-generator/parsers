@@ -58,7 +58,7 @@ func setLicense(mod *meta.Package, path string) error {
 	mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 	if !helper.LicenseSPDXExists(licensePkg.ID) {
 		licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-		mod.OtherLicense = append(mod.OtherLicense, licensePkg)
+		mod.OtherLicense = append(mod.OtherLicense, *licensePkg)
 	}
 	mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 	mod.CommentsLicense = licensePkg.Comments

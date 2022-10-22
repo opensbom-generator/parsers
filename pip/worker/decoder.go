@@ -195,7 +195,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 		if !helper.LicenseSPDXExists(licensePkg.ID) {
 			licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
 			licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
-			module.OtherLicense = append(module.OtherLicense, licensePkg)
+			module.OtherLicense = append(module.OtherLicense, *licensePkg)
 		}
 	}
 

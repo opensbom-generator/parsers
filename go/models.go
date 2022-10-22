@@ -15,7 +15,7 @@ type mod struct {
 }
 
 type JSONOutput struct {
-	Dir        string  `json: "Dir,omitempty"`
+	Dir        string  `json:"Dir,omitempty"`
 	ImportPath string  `json:"ImportPath,omitempty"`
 	Name       string  `json:"Name,omitempty"`
 	Module     *Module `json:"Module,omitempty"`

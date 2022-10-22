@@ -308,7 +308,7 @@ func setLicenseInfo(path string, module *meta.Package) {
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 		if !helper.LicenseSPDXExists(licensePkg.ID) {
 			licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-			module.OtherLicense = append(module.OtherLicense, licensePkg)
+			module.OtherLicense = append(module.OtherLicense, *licensePkg)
 		}
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments

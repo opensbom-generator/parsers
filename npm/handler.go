@@ -138,7 +138,7 @@ func (m *npm) GetRootModule(path string) (*meta.Package, error) {
 	mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
 	mod.CommentsLicense = modLic.Comments
 	if !helper.LicenseSPDXExists(modLic.ID) {
-		mod.OtherLicense = append(mod.OtherLicense, modLic)
+		mod.OtherLicense = append(mod.OtherLicense, *modLic)
 	}
 
 	return mod, nil
@@ -230,18 +230,18 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]met
 
 			mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], key, m.metadata.Manifest[0]))
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
-			mod.Checksum = meta.Package{
+			mod.Checksum = meta.Checksum{
 				Algorithm: "SHA256",
 				Value:     h,
 			}
 
 			mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
-			mod.Modules = map[string]*meta.Package{}
+			mod.Packages = map[string]*meta.Package{}
 			if dd["requires"] != nil {
 				modDeps := dd["requires"].(map[string]interface{})
 				deps := getPackageDependencies(modDeps, "requires")
 				for k, v := range deps {
-					mod.Modules[k] = v
+					mod.Packages[k] = v
 				}
 			}
 
@@ -249,7 +249,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]met
 				modDeps := dd["dependencies"].(map[string]interface{})
 				deps := getPackageDependencies(modDeps, "dependencies")
 				for k, v := range deps {
-					mod.Modules[k] = v
+					mod.Packages[k] = v
 				}
 			}
 
@@ -262,7 +262,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]met
 			mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
 			mod.CommentsLicense = modLic.Comments
 			if !helper.LicenseSPDXExists(modLic.ID) {
-				mod.OtherLicense = append(mod.OtherLicense, modLic)
+				mod.OtherLicense = append(mod.OtherLicense, *modLic)
 			}
 
 			modules = append(modules, mod)

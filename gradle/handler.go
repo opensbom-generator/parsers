@@ -138,7 +138,7 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 			return nil, fmt.Errorf("Could not find module for %q", rootDep)
 		} else {
 			// apparently the key is just thrown away, so this just has to be something unique
-			project.Modules[rootDep] = mod
+			project.Packages[rootDep] = mod
 		}
 	}
 
@@ -154,7 +154,7 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 				return nil, fmt.Errorf("could not find module for %q", tdep)
 			}
 			// apparently the key is just thrown away, so this just has to be something unique
-			mod.Modules[tdep] = tmod
+			mod.Packages[tdep] = tmod
 		}
 	}
 	return mods, nil
