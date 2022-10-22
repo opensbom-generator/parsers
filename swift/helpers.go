@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/mod/semver"
 
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 func (description SwiftPackageDescription) Module() *meta.Package {

@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/opensbom-generator/parsers/pip/worker"
 	"github.com/opensbom-generator/parsers/plugin"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/worker"
 )
 
 const cmdName = "python"

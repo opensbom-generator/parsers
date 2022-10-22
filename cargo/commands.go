@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/parsers/helper"
 )
 
 type command string

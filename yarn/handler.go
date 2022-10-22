@@ -13,10 +13,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
 	"github.com/opensbom-generator/parsers/reader"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 type yarn struct {

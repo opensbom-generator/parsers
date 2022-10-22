@@ -10,7 +10,7 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/parsers/helper"
 )
 
 const pkgMetedataSeparator string = "---"

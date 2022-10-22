@@ -4,7 +4,6 @@ package helper
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,10 +12,9 @@ import (
 	"strings"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
-	log "github.com/sirupsen/logrus"
+	"github.com/opensbom-generator/parsers/license"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/licenses"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 const copyrightLookup = "copyright"
@@ -66,13 +64,13 @@ func Exists(filepath string) bool {
 }
 
 // GetLicenses ...
-func GetLicenses(modulePath string) (*models.License, error) {
+func GetLicenses(modulePath string) (*license.License, error) {
 	if modulePath != "" {
 		licenses := licensedb.Analyse(modulePath)
 		for i := range licenses {
 			for j := range licenses[i].Matches {
 				//returns the first element, the best match
-				return &models.License{ID: licenses[i].Matches[j].License,
+				return &license.License{ID: licenses[i].Matches[j].License,
 					Name:          licenses[i].Matches[j].License,
 					ExtractedText: extractLicenseContent(modulePath, licenses[i].Matches[j].File),
 					Comments:      "",
@@ -80,12 +78,12 @@ func GetLicenses(modulePath string) (*models.License, error) {
 			}
 		}
 	}
-	return nil, errors.New(fmt.Sprintf("could not detect license for %s\n", modulePath))
+	return nil, fmt.Errorf("could not detect license for %s", modulePath)
 }
 
 // LicenseExist ...
 func LicenseSPDXExists(license string) bool {
-	if _, ok := licenses.DB[license]; !ok {
+	if _, ok := license.DB[license]; !ok {
 		return false
 	}
 	return true

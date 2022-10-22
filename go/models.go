@@ -3,9 +3,9 @@
 package gomod
 
 import (
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 type mod struct {

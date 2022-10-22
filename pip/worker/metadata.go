@@ -9,7 +9,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/parsers/helper"
 )
 
 const ProjectUrl = "pypi.org/project"
