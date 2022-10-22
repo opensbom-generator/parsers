@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"hash"
 	"strings"
+
+	"github.com/opensbom-generator/parsers/license"
 )
 
 // Package is the package abstraction that the parsers return
@@ -26,7 +28,7 @@ type Package struct {
 	LicenseConcluded        string
 	LicenseDeclared         string
 	CommentsLicense         string
-	OtherLicense            []License
+	OtherLicense            []license.License
 	Copyright               string
 	PackageComment          string
 	Root                    bool

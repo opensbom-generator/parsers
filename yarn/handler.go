@@ -139,7 +139,7 @@ func (m *yarn) GetRootModule(path string) (*meta.Package, error) {
 	mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
 	mod.CommentsLicense = modLic.Comments
 	if !helper.LicenseSPDXExists(modLic.ID) {
-		mod.OtherLicense = append(mod.OtherLicense, modLic)
+		mod.OtherLicense = append(mod.OtherLicense, *modLic)
 	}
 	return mod, nil
 }
@@ -253,7 +253,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]meta.Package
 		mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
 		mod.CommentsLicense = modLic.Comments
 		if !helper.LicenseSPDXExists(modLic.ID) {
-			mod.OtherLicense = append(mod.OtherLicense, modLic)
+			mod.OtherLicense = append(mod.OtherLicense, *modLic)
 		}
 		modules = append(modules, mod)
 	}

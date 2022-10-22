@@ -8,7 +8,7 @@ import (
 	"os/exec"
 )
 
-var errEmptyArgs = errors.New("At least one argument is required")
+var errEmptyArgs = errors.New("at least one argument is required")
 
 // CmdOptions ...
 type CmdOptions struct {

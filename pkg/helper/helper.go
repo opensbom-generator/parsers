@@ -5,6 +5,7 @@ package helper
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	"github.com/opensbom-generator/parsers/license"
+	"github.com/spdx/spdx-sbom-generator/pkg/licenses"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -81,8 +83,8 @@ func GetLicenses(modulePath string) (*license.License, error) {
 }
 
 // LicenseExist ...
-func LicenseSPDXExists(licenseID string) bool {
-	if _, ok := license.DB[licenseID]; !ok {
+func LicenseSPDXExists(license string) bool {
+	if _, ok := licenses.DB[license]; !ok {
 		return false
 	}
 	return true
@@ -118,7 +120,7 @@ func BuildLicenseConcluded(license string) string {
 
 // todo: figure out how to extract only required text
 func extractLicenseContent(path, filename string) string {
-	bytes, err := os.ReadFile(fmt.Sprintf("%s/%s", path, filename))
+	bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
 	if err != nil {
 		log.Errorf("Could not read license file: %v", err)
 		return ""

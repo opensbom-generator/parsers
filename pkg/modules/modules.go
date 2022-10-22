@@ -5,20 +5,19 @@ package modules
 import (
 	"errors"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/javagradle"
-
 	log "github.com/sirupsen/logrus"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/cargo"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/composer"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/gem"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/gomod"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/javamaven"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/npm"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/nuget"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/swift"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/yarn"
+	"github.com/opensbom-generator/parsers/cargo"
+	"github.com/opensbom-generator/parsers/composer"
+	"github.com/opensbom-generator/parsers/gem"
+	gomod "github.com/opensbom-generator/parsers/go"
+	javagradle "github.com/opensbom-generator/parsers/gradle"
+	javamaven "github.com/opensbom-generator/parsers/maven"
+	"github.com/opensbom-generator/parsers/npm"
+	"github.com/opensbom-generator/parsers/nuget"
+	"github.com/opensbom-generator/parsers/pip"
+	"github.com/opensbom-generator/parsers/swift"
+	"github.com/opensbom-generator/parsers/yarn"
 
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
