@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 type gem struct {

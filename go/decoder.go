@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/opensbom-generator/parsers/meta"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/parsers/helper"
 )
 
 const vendorFolder = "vendor"

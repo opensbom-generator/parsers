@@ -10,8 +10,8 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/helper"
 	"github.com/opensbom-generator/parsers/meta"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 func (m *composer) getRootProjectInfo(path string) (meta.Package, error) {
