@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package licenses
+package license
+
+// License ...
+type License struct {
+	ID            string
+	Name          string
+	ExtractedText string
+	Comments      string
+	File          string
+}
 
 var DB = map[string]string{
 	"0BSD":                                 "BSD Zero Clause License",
