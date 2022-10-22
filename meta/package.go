@@ -119,12 +119,3 @@ const (
 	HashAlgoMD5    HashAlgorithm = "MD5"
 	HashAlgoMD6    HashAlgorithm = "MD6"
 )
-
-// License ...
-type License struct {
-	ID            string
-	Name          string
-	ExtractedText string
-	Comments      string
-	File          string
-}
