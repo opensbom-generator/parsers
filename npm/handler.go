@@ -10,10 +10,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/reader"
+	"github.com/opensbom-generator/parsers/reader"
 )
 
 type npm struct {
@@ -203,7 +204,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]met
 	}
 	rootDeps := getPackageDependencies(deps, "dependencies")
 	for k, v := range rootDeps {
-		de.Modules[k] = v
+		de.Packages[k] = v
 	}
 	modules = append(modules, *de)
 
