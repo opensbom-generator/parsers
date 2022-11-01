@@ -34,7 +34,8 @@ func hasGradlew(workingDir string) bool {
 
 func (ge gradleExec) run(args ...string) *exec.Cmd {
 	args = append(args, "--console=plain")
-	cmd := exec.Command(ge.executable, args...)
+	// TODO Use internal helper, migrate to k8s command
+	cmd := exec.Command(ge.executable, args...) // nolint :gosec:This is fixed to the gradle command
 	cmd.Dir = ge.workingDir
 	return cmd
 }

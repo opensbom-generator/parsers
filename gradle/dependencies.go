@@ -249,6 +249,7 @@ func findDownloadLocations(repos []string, deps []string) (map[string]string, er
 			if err != nil {
 				return nil, err
 			}
+			// TODO: I'm not sure if we want to do this.
 			if remoteExists(remote) {
 				depUrls[dep] = remote
 				break
@@ -278,7 +279,7 @@ func getSHA1(depURL string) (string, error) {
 }
 
 func remoteExists(depURL string) bool {
-	r, err := http.Head(depURL)
+	r, err := http.Head(depURL) // nolint :gosec:This is supposed to take any arbitrary url
 	if err != nil {
 		log.Print(err)
 		return false
