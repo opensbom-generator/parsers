@@ -71,8 +71,13 @@ func parseProjectInfo(out []byte) (projectInfo, error) {
 
 // origin, hash
 // perhaps this can be moved to util
+// this should be moved to an internal git package.
 func getGitInfo(path string) (string, string, error) {
-	sha, err := exec.Command("git", "describe", `--match=""`, "--always", "--abbrev=40", "--dirty").Output()
+	c := exec.Command("git", "describe", `--match=""`, "--always", "--abbrev=40", "--dirty")
+	if path != "" {
+		c.Dir = path
+	}
+	sha, err := c.Output()
 	if err != nil {
 		return "", "", err
 	}
