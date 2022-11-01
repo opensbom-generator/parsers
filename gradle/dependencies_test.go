@@ -3,14 +3,14 @@
 package javagradle
 
 import (
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
 )
 
 func TestParseDependencyOutput(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/dependencies.out")
+	data, err := os.ReadFile("testdata/dependencies.out")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestParseDependencyOutput(t *testing.T) {
 }
 
 func TestParseRepoOutput(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/repositories.out")
+	data, err := os.ReadFile("testdata/repositories.out")
 	if err != nil {
 		t.Fatal(err)
 	}

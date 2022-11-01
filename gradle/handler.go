@@ -134,12 +134,12 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 
 	// add all root dependencies to the project module
 	for _, rootDep := range deps.root {
-		if mod, ok := modsMap[rootDep]; !ok {
-			return nil, fmt.Errorf("Could not find module for %q", rootDep)
-		} else {
-			// apparently the key is just thrown away, so this just has to be something unique
-			project.Packages[rootDep] = mod
+		mod, ok := modsMap[rootDep]
+		if !ok {
+			return nil, fmt.Errorf("could not find module for %q", rootDep)
 		}
+		// apparently the key is just thrown away, so this just has to be something unique
+		project.Packages[rootDep] = mod
 	}
 
 	// add transitive dependencies
@@ -163,7 +163,7 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 // generate gradle dependency module (non-root)
 func generateModule(name, depURL string) (meta.Package, error) {
 	mod := meta.Package{}
-	groupId, artifactId, version, err := splitDep(name)
+	groupID, artifactID, version, err := splitDep(name)
 	if err != nil {
 		return mod, err
 	}
@@ -173,9 +173,9 @@ func generateModule(name, depURL string) (meta.Package, error) {
 	}
 	mod.Supplier = meta.Supplier{
 		Type: "Group Id",
-		Name: groupId,
+		Name: groupID,
 	}
-	mod.Name = artifactId
+	mod.Name = artifactID
 	mod.Version = version
 	mod.PackageDownloadLocation = depURL
 	mod.Checksum = meta.Checksum{
