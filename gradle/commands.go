@@ -34,7 +34,7 @@ func hasGradlew(workingDir string) bool {
 
 func (ge gradleExec) run(args ...string) *exec.Cmd {
 	args = append(args, "--console=plain")
-	cmd := exec.Command(ge.executable, args...)
+	cmd := exec.Command(ge.executable, args...) //nolint: gosec
 	cmd.Dir = ge.workingDir
 	return cmd
 }

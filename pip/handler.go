@@ -11,24 +11,24 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type pip struct {
+type PIP struct {
 	plugin plugin.Plugin
 }
 
 // New ...
-func New() *pip {
-	return &pip{
+func New() *PIP {
+	return &PIP{
 		plugin: nil,
 	}
 }
 
 // Get Metadata ...
-func (m *pip) GetMetadata() plugin.Metadata {
+func (m *PIP) GetMetadata() plugin.Metadata {
 	return m.plugin.GetMetadata()
 }
 
 // Is Valid ...
-func (m *pip) IsValid(path string) bool {
+func (m *PIP) IsValid(path string) bool {
 	if p := pipenv.New(); p.IsValid(path) {
 		m.plugin = p
 		return true
@@ -48,31 +48,31 @@ func (m *pip) IsValid(path string) bool {
 }
 
 // Has Modules Installed ...
-func (m *pip) HasModulesInstalled(path string) error {
+func (m *PIP) HasModulesInstalled(path string) error {
 	return m.plugin.HasModulesInstalled(path)
 }
 
 // Get Version ...
-func (m *pip) GetVersion() (string, error) {
+func (m *PIP) GetVersion() (string, error) {
 	return m.plugin.GetVersion()
 }
 
 // Set Root Module ...
-func (m *pip) SetRootModule(path string) error {
+func (m *PIP) SetRootModule(path string) error {
 	return m.plugin.SetRootModule(path)
 }
 
 // Get Root Module ...
-func (m *pip) GetRootModule(path string) (*meta.Package, error) {
+func (m *PIP) GetRootModule(path string) (*meta.Package, error) {
 	return m.plugin.GetRootModule(path)
 }
 
 // List Used Modules...
-func (m *pip) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *PIP) ListUsedModules(path string) ([]meta.Package, error) {
 	return m.plugin.ListUsedModules(path)
 }
 
 // List Modules With Deps ...
-func (m *pip) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *PIP) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	return m.plugin.ListModulesWithDeps(path, globalSettingFile)
 }

@@ -14,22 +14,21 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type gem struct {
+type Gem struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
-	command    *helper.Cmd
 }
 
-var errDependenciesNotFound, errInvalidProjectType = errors.New(
-	`* Please install dependencies by running the following command :
+var (
+	errDependenciesNotFound = errors.New(`* Please install dependencies by running the following command
     1) bundle config set --local path 'vendor/bundle' && bundle install && bundle exec rake install
-    2) run the spdx-sbom-generator tool command
-`), errors.New(
-	`* Tool only supports ruby gems projects with valid .gemspec manifest in project root directory`)
+    2) run the spdx-sbom-generator tool command`)
+	errInvalidProjectType = errors.New("* Tool only supports ruby gems projects with valid .gemspec manifest in project root directory")
+)
 
 // New ...
-func New() *gem {
-	return &gem{
+func New() *Gem {
+	return &Gem{
 		metadata: plugin.Metadata{
 			Name:       "Bundler",
 			Slug:       "bundler",
@@ -40,24 +39,23 @@ func New() *gem {
 }
 
 // GetMetadata ...
-func (g *gem) GetMetadata() plugin.Metadata {
+func (g *Gem) GetMetadata() plugin.Metadata {
 	return g.metadata
 }
 
 // IsValid ...
-func (g *gem) IsValid(path string) bool {
-
+func (g *Gem) IsValid(path string) bool {
 	for i := range g.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, g.metadata.Manifest[i])) {
 			return true
 		}
 	}
+
 	return false
 }
 
 // HasModulesInstalled ...
-func (g *gem) HasModulesInstalled(path string) error {
-
+func (g *Gem) HasModulesInstalled(path string) error {
 	if !validateProjectType(path) {
 		return errInvalidProjectType
 	}
@@ -71,12 +69,12 @@ func (g *gem) HasModulesInstalled(path string) error {
 	if hasRake && hasModule {
 		return nil
 	}
+
 	return errDependenciesNotFound
 }
 
 // GetVersion ...
-func (g *gem) GetVersion() (string, error) {
-
+func (g *Gem) GetVersion() (string, error) {
 	cmd := exec.Command("bundler", "version")
 	output, err := cmd.Output()
 	if err != nil {
@@ -91,11 +89,12 @@ func (g *gem) GetVersion() (string, error) {
 	if len(fields) < 2 {
 		return "", fmt.Errorf("unexpected output format: %s", output)
 	}
+
 	return fields[2], nil
 }
 
 // SetRootModule ...
-func (g *gem) SetRootModule(path string) error {
+func (g *Gem) SetRootModule(path string) error {
 	module, err := g.GetRootModule(path)
 	if err != nil {
 		return err
@@ -107,28 +106,30 @@ func (g *gem) SetRootModule(path string) error {
 }
 
 // GetRootModule...
-func (g *gem) GetRootModule(path string) (*meta.Package, error) {
+func (g *Gem) GetRootModule(path string) (*meta.Package, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
 		return &meta.Package{}, err
 	}
+
 	return getGemRootModule(path)
 }
 
 // GetModule ...
-func (g *gem) GetModule(path string) ([]meta.Package, error) {
+func (g *Gem) GetModule(path string) ([]meta.Package, error) {
 	return nil, nil
 }
 
 // ListUsedModules ...
-func (g *gem) ListUsedModules(path string) ([]meta.Package, error) {
+func (g *Gem) ListUsedModules(path string) ([]meta.Package, error) {
 	var globalSettingFile string
 	return g.ListModulesWithDeps(path, globalSettingFile)
 }
 
 // ListModulesWithDeps ...
-func (g *gem) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (g *Gem) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
 		return []meta.Package{}, err
 	}
+
 	return listGemRootModule(path)
 }

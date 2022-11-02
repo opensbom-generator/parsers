@@ -36,7 +36,8 @@ func (c *Cmd) Build() error {
 		return errEmptyArgs
 	}
 
-	c.cmd = exec.Command(c.options.Name, c.options.Args...)
+	// TODO: review this function
+	c.cmd = exec.Command(c.options.Name, c.options.Args...) //nolint: gosec
 	c.cmd.Dir = c.options.Directory
 
 	return nil

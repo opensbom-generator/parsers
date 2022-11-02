@@ -7,10 +7,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -28,15 +28,6 @@ type depInfo struct {
 // what the final packager is going to package into the bom, what a dilemma
 func getDependencies(dir string) (depInfo, error) {
 	return dependencies(dir, ":dependencies")
-}
-
-// collect all non-transitive dependencies from the build classpath, this is basically the dependencies
-// used to build the project. It's not clear to me that it's necessary to include these, but gradle plugins
-// can end up doing whatever they want to the final artifact. If we're trying to generate an sbom
-// *before* build.
-// Leave them out for now, but include them if we think we need to.
-func getBuildDependencies(dir string) (depInfo, error) {
-	return dependencies(dir, ":buildEnvironment")
 }
 
 func dependencies(dir string, command string) (depInfo, error) {
@@ -70,7 +61,7 @@ func parseDependencyOutput(out []byte) (depInfo, error) {
 		if dp.MatchString(line) {
 			split := strings.SplitN(line, "--- ", 2)
 			if len(split) != 2 {
-				return depInfo{}, fmt.Errorf("Parse error %v on : %q", len(split), line)
+				return depInfo{}, fmt.Errorf("parse error %v on : %q", len(split), line)
 			}
 			current := split[1]
 
@@ -135,24 +126,9 @@ func getRepositories(dir string) ([]string, error) {
 	return repositories(dir, initRepos)
 }
 
-var initBuildRepos = `
-gradle.allprojects {
-  tasks.register('spdxPrintRepos') {
-    doLast {
-      buildscript.repositories.each { println "spdx-repo:" + it.descriptor.url }
-    }
-  }
-}
-`
-
-// TODO: this doesn't differentiate between "plugin" repos and "buildscript" repos,
-func getBuildRepositories(dir string) ([]string, error) {
-	return repositories(dir, initBuildRepos)
-}
-
 // inject an initscript to print out all repositories
 func repositories(dir string, initContents string) ([]string, error) {
-	initFile, err := ioutil.TempFile("", "*-spdx-init.gradle")
+	initFile, err := os.CreateTemp("", "*-spdx-init.gradle")
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +159,7 @@ func parseRepoOutput(out []byte) ([]string, error) {
 		if strings.HasPrefix(line, "spdx-repo:") {
 			split := strings.SplitN(line, ":", 2)
 			if len(split) != 2 {
-				return nil, fmt.Errorf("Parse error on : %q", line)
+				return nil, fmt.Errorf("parse failed on : %s", line)
 			}
 			result = append(result, split[1])
 		}
@@ -195,32 +171,33 @@ func parseRepoOutput(out []byte) ([]string, error) {
 func splitDep(dep string) (string, string, string, error) {
 	parts := strings.SplitN(dep, ":", 3)
 	if len(parts) != 3 {
-		return "", "", "", fmt.Errorf("Dependency parse error on : %q", dep)
+		return "", "", "", fmt.Errorf("dependency parse error on : %q", dep)
 	}
-	groupId := parts[0]
-	artifactId := parts[1]
+	groupID := parts[0]
+	artifactID := parts[1]
 	version := parts[2]
-	return groupId, artifactId, version, nil
+	return groupID, artifactID, version, nil
 }
 
 // returns the path to a jar for a dependency for any valid repository
 // append this to a repository url to get a dependency location
 func calculateURLSuffix(dep string) (string, error) {
-	groupId, artifactId, version, err := splitDep(dep)
+	groupID, artifactID, version, err := splitDep(dep)
 	if err != nil {
 		return "", err
 	}
 
-	groupIdPath := strings.Replace(groupId, ".", "/", -1)
-	artifactName := artifactId + "-" + version
+	groupIDPath := strings.ReplaceAll(groupID, ".", "/")
+	artifactName := artifactID + "-" + version
 	// gradle plugins are pom pointing to jar, this is a simple hueristic to
 	// handle that. It might not cover all cases though
-	if strings.HasSuffix(artifactId, "gradle.plugin") {
+	if strings.HasSuffix(artifactID, "gradle.plugin") {
 		artifactName += ".pom"
 	} else {
 		artifactName += ".jar"
 	}
-	suffix := path.Join(groupIdPath, artifactId, version, artifactName)
+
+	suffix := path.Join(groupIDPath, artifactID, version, artifactName)
 	return suffix, nil
 }
 
@@ -253,7 +230,7 @@ func findDownloadLocations(repos []string, deps []string) (map[string]string, er
 			}
 		}
 		if _, ok := depUrls[dep]; !ok {
-			return nil, fmt.Errorf("Could not find download location for %q", dep)
+			return nil, fmt.Errorf("could not find download location for %q", dep)
 		}
 	}
 	return depUrls, nil
@@ -268,15 +245,17 @@ func getSHA1(depURL string) (string, error) {
 	}
 
 	defer r.Body.Close()
-	if b, err := io.ReadAll(io.LimitReader(r.Body, int64(cap(sb)))); err != nil {
+	b, err := io.ReadAll(io.LimitReader(r.Body, int64(cap(sb))))
+	if err != nil {
 		return "", err
-	} else {
-		return string(b), nil
 	}
+
+	return string(b), nil
 }
 
 func remoteExists(depURL string) bool {
-	r, err := http.Head(depURL)
+	// TODO: review this
+	r, err := http.Head(depURL) //nolint: gosec
 	if err != nil {
 		log.Print(err)
 		return false

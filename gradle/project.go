@@ -34,42 +34,44 @@ func parseProjectInfo(out []byte) (projectInfo, error) {
 
 	for sc.Scan() {
 		line := sc.Text()
-		if strings.HasPrefix(line, "version:") {
+		switch {
+		case strings.HasPrefix(line, "version:"):
 			split := strings.SplitN(line, ":", 2)
 			if len(split) != 2 {
-				return pi, fmt.Errorf("Could not parse version: %q", line)
+				return pi, fmt.Errorf("could not parse version: %q", line)
 			}
 			pi.version = strings.TrimSpace(split[1])
-
-		} else if strings.HasPrefix(line, "name:") {
+		case strings.HasPrefix(line, "name:"):
 			split := strings.SplitN(line, ":", 2)
 			if len(split) != 2 {
-				return pi, fmt.Errorf("Could not parse name: %q", line)
+				return pi, fmt.Errorf("could not parse name: %q", line)
 			}
 			pi.name = strings.TrimSpace(split[1])
-		} else if strings.HasPrefix(line, "group:") {
+		case strings.HasPrefix(line, "group:"):
 			split := strings.SplitN(line, ":", 2)
 			if len(split) != 2 {
-				return pi, fmt.Errorf("Could not parse group: %q", line)
+				return pi, fmt.Errorf("could not parse group: %q", line)
 			}
 			pi.group = strings.TrimSpace(split[1])
+		default:
 		}
 	}
 	if pi.version == "" {
-		return pi, fmt.Errorf("Could not find version")
+		return pi, fmt.Errorf("could not find version")
 	}
 	if pi.name == "" {
-		return pi, fmt.Errorf("Could not find name")
+		return pi, fmt.Errorf("could not find name")
 	}
 	if pi.group == "" {
-		return pi, fmt.Errorf("Could not find group")
+		return pi, fmt.Errorf("could not find group")
 	}
+
 	return pi, nil
 }
 
 // origin, hash
 // perhaps this can be moved to util
-func getGitInfo(path string) (string, string, error) {
+func getGitInfo() (string, string, error) {
 	sha, err := exec.Command("git", "describe", `--match=""`, "--always", "--abbrev=40", "--dirty").Output()
 	if err != nil {
 		return "", "", err
@@ -78,5 +80,6 @@ func getGitInfo(path string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+
 	return strings.TrimSpace(string(origin)), strings.TrimSpace(string(sha)), nil
 }

@@ -26,6 +26,11 @@ output:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+  # TODO: review the sha1 and other cryptographic primitive
+  exclude:
+    - G401
+    - G501
+    - G505
 run:
   issues-exit-code: 1
   timeout: 10m

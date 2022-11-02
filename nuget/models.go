@@ -5,7 +5,6 @@ package nuget
 import (
 	"encoding/xml"
 	"io"
-	"io/ioutil"
 )
 
 // File ...
@@ -20,8 +19,8 @@ type Dependency struct {
 	Version string `xml:"version,attr"`
 }
 
-// NugetSpec ...
-type NugetSpec struct {
+// Spec ...
+type Spec struct {
 	Name  xml.Name `xml:"package"`
 	Xmlns string   `xml:"xmlns,attr,omitempty"`
 	Meta  struct {
@@ -68,8 +67,8 @@ type PackageDetail struct {
 }
 
 // ConvertedFromBytes ...
-func ConvertFromBytes(specFile []byte) (*NugetSpec, error) {
-	nugetSpec := NugetSpec{}
+func ConvertFromBytes(specFile []byte) (*Spec, error) {
+	nugetSpec := Spec{}
 	err := xml.Unmarshal(specFile, &nugetSpec)
 	if err != nil {
 		return nil, err
@@ -78,8 +77,8 @@ func ConvertFromBytes(specFile []byte) (*NugetSpec, error) {
 }
 
 // ConvertFromReader ...
-func ConvertFromReader(reader io.ReadCloser) (*NugetSpec, error) {
-	bytes, err := ioutil.ReadAll(reader)
+func ConvertFromReader(reader io.ReadCloser) (*Spec, error) {
+	bytes, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}

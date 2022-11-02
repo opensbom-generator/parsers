@@ -13,20 +13,23 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-const cmdName = "pipenv"
-const manifestFile = "Pipfile"
-const manifestLockFile = "Pipfile.lock"
-const placeholderPkgName = "{PACKAGE}"
-const packageSrcLocation = "/src/"
-const packageSiteLocation = "/site-packages"
+const (
+	cmdName             = "pipenv"
+	manifestFile        = "Pipfile"
+	manifestLockFile    = "Pipfile.lock"
+	placeholderPkgName  = "{PACKAGE}"
+	packageSrcLocation  = "/src/"
+	packageSiteLocation = "/site-packages"
+)
 
-var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pipenv install` or `pipenv update`")
-var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
-var errNoPipCommand = errors.New("Cannot find the pipenv command")
-var errVersionNotFound = errors.New("Python version not found")
-var errFailedToConvertModules = errors.New("Failed to convert modules")
+var (
+	errDependenciesNotFound   = errors.New("unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pipenv install` or `pipenv update`")
+	errNoPipCommand           = errors.New("cannot find the pipenv command")
+	errVersionNotFound        = errors.New("python version not found")
+	errFailedToConvertModules = errors.New("failed to convert modules")
+)
 
-type pipenv struct {
+type PipEnv struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
@@ -38,8 +41,8 @@ type pipenv struct {
 }
 
 // New ...
-func New() *pipenv {
-	return &pipenv{
+func New() *PipEnv {
+	return &PipEnv{
 		metadata: plugin.Metadata{
 			Name:       "The Python Package Index (PyPI)",
 			Slug:       "pipenv",
@@ -50,12 +53,12 @@ func New() *pipenv {
 }
 
 // Get Metadata ...
-func (m *pipenv) GetMetadata() plugin.Metadata {
+func (m *PipEnv) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // Is Valid ...
-func (m *pipenv) IsValid(path string) bool {
+func (m *PipEnv) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -65,7 +68,7 @@ func (m *pipenv) IsValid(path string) bool {
 }
 
 // Has Modules Installed ...
-func (m *pipenv) HasModulesInstalled(path string) error {
+func (m *PipEnv) HasModulesInstalled(path string) error {
 	if err := m.buildCmd(ModulesCmd, m.basepath); err != nil {
 		return err
 	}
@@ -77,7 +80,7 @@ func (m *pipenv) HasModulesInstalled(path string) error {
 }
 
 // Get Version ...
-func (m *pipenv) GetVersion() (string, error) {
+func (m *PipEnv) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
 		return "", err
 	}
@@ -90,13 +93,13 @@ func (m *pipenv) GetVersion() (string, error) {
 }
 
 // Set Root Module ...
-func (m *pipenv) SetRootModule(path string) error {
+func (m *PipEnv) SetRootModule(path string) error {
 	m.basepath = path
 	return nil
 }
 
 // Get Root Module ...
-func (m *pipenv) GetRootModule(path string) (*meta.Package, error) {
+func (m *PipEnv) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module := m.fetchRootModule()
 		m.rootModule = &module
@@ -105,7 +108,7 @@ func (m *pipenv) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // List Used Modules...
-func (m *pipenv) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *PipEnv) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
@@ -121,19 +124,19 @@ func (m *pipenv) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 // List Modules With Deps ...
-func (m *pipenv) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *PipEnv) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
 	}
-	m.GetRootModule(path)
+	_, _ = m.GetRootModule(path)
 	if err := worker.BuildDependencyGraph(&m.allModules, &m.metainfo); err != nil {
 		return nil, err
 	}
 	return modules, err
 }
 
-func (m *pipenv) buildCmd(cmd command, path string) error {
+func (m *PipEnv) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != cmdName {
 		return errNoPipCommand
@@ -150,10 +153,10 @@ func (m *pipenv) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-func (m *pipenv) GetPackageDetails(packageNameList string) (string, error) {
+func (m *PipEnv) GetPackageDetails(packageNameList string) (string, error) {
 	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageNameList))
 
-	m.buildCmd(metatdataCmd, m.basepath)
+	_ = m.buildCmd(metatdataCmd, m.basepath)
 	result, err := m.command.Output()
 	if err != nil {
 		return "", err
@@ -162,7 +165,7 @@ func (m *pipenv) GetPackageDetails(packageNameList string) (string, error) {
 	return result, nil
 }
 
-func (m *pipenv) PushRootModuleToVenv() (bool, error) {
+func (m *PipEnv) PushRootModuleToVenv() (bool, error) {
 	if err := m.buildCmd(InstallRootModuleCmd, m.basepath); err != nil {
 		return false, err
 	}
@@ -173,7 +176,7 @@ func (m *pipenv) PushRootModuleToVenv() (bool, error) {
 	return false, nil
 }
 
-func (m *pipenv) markRootModue() {
+func (m *PipEnv) markRootModue() {
 	for i, pkg := range m.pkgs {
 		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
@@ -182,7 +185,7 @@ func (m *pipenv) markRootModue() {
 	}
 }
 
-func (m *pipenv) LoadModuleList(path string) error {
+func (m *PipEnv) LoadModuleList(path string) error {
 	var state bool
 	var err error
 
@@ -191,7 +194,7 @@ func (m *pipenv) LoadModuleList(path string) error {
 		if err != nil && !state {
 			return err
 		}
-		m.buildCmd(ModulesCmd, m.basepath)
+		_ = m.buildCmd(ModulesCmd, m.basepath)
 		result, err := m.command.Output()
 		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 			m.pkgs = worker.LoadModules(result, m.version)
@@ -202,7 +205,7 @@ func (m *pipenv) LoadModuleList(path string) error {
 	return err
 }
 
-func (m *pipenv) fetchRootModule() meta.Package {
+func (m *PipEnv) fetchRootModule() meta.Package {
 	for _, mod := range m.allModules {
 		if mod.Root {
 			return mod

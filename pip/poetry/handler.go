@@ -13,18 +13,21 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-const cmdName = "poetry"
-const manifestFile = "pyproject.toml"
-const manifestLockFile = "poetry.lock"
-const placeholderPkgName = "{PACKAGE}"
+const (
+	cmdName            = "poetry"
+	manifestFile       = "pyproject.toml"
+	manifestLockFile   = "poetry.lock"
+	placeholderPkgName = "{PACKAGE}"
+)
 
-var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update`")
-var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
-var errNoPipCommand = errors.New("Cannot find the poetry command")
-var errVersionNotFound = errors.New("Python version not found")
-var errFailedToConvertModules = errors.New("Failed to convert modules")
+var (
+	errDependenciesNotFound   = errors.New("unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update`")
+	errNoPipCommand           = errors.New("cannot find the poetry command")
+	errVersionNotFound        = errors.New("python version not found")
+	errFailedToConvertModules = errors.New("failed to convert modules")
+)
 
-type poetry struct {
+type Poetry struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
@@ -36,8 +39,8 @@ type poetry struct {
 }
 
 // New ...
-func New() *poetry {
-	return &poetry{
+func New() *Poetry {
+	return &Poetry{
 		metadata: plugin.Metadata{
 			Name:       "The Python Package Index (PyPI)",
 			Slug:       "poetry",
@@ -48,12 +51,12 @@ func New() *poetry {
 }
 
 // Get Metadata ...
-func (m *poetry) GetMetadata() plugin.Metadata {
+func (m *Poetry) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // Is Valid ...
-func (m *poetry) IsValid(path string) bool {
+func (m *Poetry) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -63,7 +66,7 @@ func (m *poetry) IsValid(path string) bool {
 }
 
 // Has Modules Installed ...
-func (m *poetry) HasModulesInstalled(path string) error {
+func (m *Poetry) HasModulesInstalled(path string) error {
 	if err := m.buildCmd(ModulesCmd, m.basepath); err != nil {
 		return err
 	}
@@ -75,7 +78,7 @@ func (m *poetry) HasModulesInstalled(path string) error {
 }
 
 // Get Version ...
-func (m *poetry) GetVersion() (string, error) {
+func (m *Poetry) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
 		return "", err
 	}
@@ -88,13 +91,13 @@ func (m *poetry) GetVersion() (string, error) {
 }
 
 // Set Root Module ...
-func (m *poetry) SetRootModule(path string) error {
+func (m *Poetry) SetRootModule(path string) error {
 	m.basepath = path
 	return nil
 }
 
 // Get Root Module ...
-func (m *poetry) GetRootModule(path string) (*meta.Package, error) {
+func (m *Poetry) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module := m.fetchRootModule()
 		m.rootModule = &module
@@ -103,7 +106,7 @@ func (m *poetry) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // List Used Modules...
-func (m *poetry) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Poetry) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
@@ -119,19 +122,19 @@ func (m *poetry) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 // List Modules With Deps ...
-func (m *poetry) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Poetry) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
 	}
-	m.GetRootModule(path)
+	_, _ = m.GetRootModule(path) // TODO: not getting the return need to check the entire function
 	if err := worker.BuildDependencyGraph(&m.allModules, &m.metainfo); err != nil {
 		return nil, err
 	}
 	return modules, err
 }
 
-func (m *poetry) buildCmd(cmd command, path string) error {
+func (m *Poetry) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != cmdName {
 		return errNoPipCommand
@@ -148,10 +151,10 @@ func (m *poetry) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-func (m *poetry) GetPackageDetails(packageName string) (string, error) {
+func (m *Poetry) GetPackageDetails(packageName string) (string, error) {
 	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
 
-	m.buildCmd(metatdataCmd, m.basepath)
+	_ = m.buildCmd(metatdataCmd, m.basepath)
 	result, err := m.command.Output()
 	if err != nil {
 		return "", err
@@ -160,7 +163,7 @@ func (m *poetry) GetPackageDetails(packageName string) (string, error) {
 	return result, nil
 }
 
-func (m *poetry) PushRootModuleToVenv() (bool, error) {
+func (m *Poetry) PushRootModuleToVenv() (bool, error) {
 	if err := m.buildCmd(InstallRootModuleCmd, m.basepath); err != nil {
 		return false, err
 	}
@@ -171,7 +174,7 @@ func (m *poetry) PushRootModuleToVenv() (bool, error) {
 	return false, nil
 }
 
-func (m *poetry) markRootModue() {
+func (m *Poetry) markRootModue() {
 	for i, pkg := range m.pkgs {
 		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
@@ -180,25 +183,32 @@ func (m *poetry) markRootModue() {
 	}
 }
 
-func (m *poetry) LoadModuleList(path string) error {
+func (m *Poetry) LoadModuleList(path string) error {
 	state, err := m.PushRootModuleToVenv()
 	if err != nil && !state {
 		return err
 	}
-	m.buildCmd(ModulesCmd, m.basepath)
+
+	err = m.buildCmd(ModulesCmd, m.basepath)
+	if err != nil {
+		return err
+	}
+
 	result, err := m.command.Output()
 	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 		m.pkgs = worker.LoadModules(result, m.version)
 		m.markRootModue()
 	}
+
 	return err
 }
 
-func (m *poetry) fetchRootModule() meta.Package {
+func (m *Poetry) fetchRootModule() meta.Package {
 	for _, mod := range m.allModules {
 		if mod.Root {
 			return mod
 		}
 	}
+
 	return meta.Package{}
 }

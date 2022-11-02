@@ -5,9 +5,7 @@ package javamaven
 import (
 	"bufio"
 	"encoding/xml"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -21,8 +19,8 @@ import (
 	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
-// RepositoryUrl is the repository url
-var RepositoryUrl string = "https://mvnrepository.com/artifact/"
+// RepositoryURL is the repository url
+var RepositoryURL = "https://mvnrepository.com/artifact/"
 
 // captures os.Stdout data and writes buffers
 func stdOutCapture() func() (string, error) {
@@ -56,25 +54,63 @@ func getDependencyList() ([]string, error) {
 	done := stdOutCapture()
 	var err error
 
+	// TODO: refactor this part extract the exec to a package and reuse it
 	cmd1 := exec.Command("mvn", "-o", "dependency:list")
 	cmd2 := exec.Command("grep", ":.*:.*:.*")
 	cmd3 := exec.Command("cut", "-d]", "-f2-")
 	cmd4 := exec.Command("sort", "-u")
 	cmd2.Stdin, err = cmd1.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	cmd3.Stdin, err = cmd2.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	cmd4.Stdin, err = cmd3.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
 	cmd4.Stdout = os.Stdout
 	err = cmd4.Start()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd3.Start()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd2.Start()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd1.Run()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd2.Wait()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd3.Wait()
+	if err != nil {
+		return nil, err
+	}
+
 	err = cmd4.Wait()
+	if err != nil {
+		return nil, err
+	}
 
 	capturedOutput, err := done()
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -96,12 +132,14 @@ func updateLicenseInformationToModule(mod *meta.Package) {
 func updatePackageSuppier(project gopom.Project, mod *meta.Package, developers []gopom.Developer) {
 	// By Default set name as project name
 	if mod.Root {
-		if len(project.Name) > 0 {
+		switch {
+		case len(project.Name) > 0:
 			mod.Supplier.Name = project.Name
-		} else if len(project.GroupID) > 0 {
+		case len(project.GroupID) > 0:
 			mod.Supplier.Name = project.GroupID
-		} else if len(project.ArtifactID) > 0 {
+		case len(project.ArtifactID) > 0:
 			mod.Supplier.Name = project.ArtifactID
+		default:
 		}
 
 		for _, developer := range developers {
@@ -126,15 +164,16 @@ func updatePackageDownloadLocation(groupID string, project gopom.Project, mod *m
 		mod.PackageDownloadLocation = distManagement.DownloadURL
 	} else {
 		if mod.Root {
-			if len(project.URL) > 0 {
+			switch {
+			case len(project.URL) > 0:
 				mod.PackageDownloadLocation = project.URL
-			} else if len(project.GroupID) > 0 {
-				mod.PackageDownloadLocation = RepositoryUrl + project.GroupID
-			} else {
-				mod.PackageDownloadLocation = RepositoryUrl + project.ArtifactID
+			case len(project.GroupID) > 0:
+				mod.PackageDownloadLocation = RepositoryURL + project.GroupID
+			default:
+				mod.PackageDownloadLocation = RepositoryURL + project.ArtifactID
 			}
 		} else {
-			mod.PackageDownloadLocation = RepositoryUrl + groupID + "/" + mod.Name + "/" + mod.Version
+			mod.PackageDownloadLocation = RepositoryURL + groupID + "/" + mod.Name + "/" + mod.Version
 		}
 	}
 }
@@ -143,7 +182,7 @@ func convertProjectLevelPackageToModule(project gopom.Project) meta.Package {
 	// package to module
 	var modName string
 	if len(project.Name) == 0 {
-		modName = strings.Replace(strings.TrimSpace(project.ArtifactID), " ", "-", -1)
+		modName = strings.ReplaceAll(strings.TrimSpace(project.ArtifactID), " ", "-")
 	} else {
 		modName = strings.TrimSpace(project.Name)
 		if strings.HasPrefix(modName, "$") {
@@ -152,7 +191,7 @@ func convertProjectLevelPackageToModule(project gopom.Project) meta.Package {
 				modName = project.ArtifactID
 			}
 		}
-		modName = strings.Replace(modName, " ", "-", -1)
+		modName = strings.ReplaceAll(modName, " ", "-")
 	}
 
 	var modVersion string
@@ -213,7 +252,7 @@ func createModule(groupID string, name string, version string, project gopom.Pro
 
 	name = path.Base(name)
 	name = strings.TrimSpace(name)
-	mod.Name = strings.Replace(name, " ", "-", -1)
+	mod.Name = strings.ReplaceAll(name, " ", "-")
 	mod.Version = modVersion
 	mod.Packages = map[string]*meta.Package{}
 	mod.Checksum = meta.Checksum{
@@ -232,7 +271,7 @@ func readAndLoadPomFile(fpath string) (gopom.Project, error) {
 	filePath := fpath + "/pom.xml"
 	pomFile, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return project, err
 	}
 
@@ -243,14 +282,14 @@ func readAndLoadPomFile(fpath string) (gopom.Project, error) {
 	}()
 
 	// read our opened xmlFile as a byte array.
-	pomData, err := ioutil.ReadAll(pomFile)
+	pomData, err := io.ReadAll(pomFile)
 	if err != nil {
 		return project, err
 	}
 
 	// Load project from string
 	if err := xml.Unmarshal(pomData, &project); err != nil {
-		fmt.Printf("unable to unmarshal pom file. Reason: %v", err)
+		log.Printf("unable to unmarshal pom file. Reason: %v", err)
 		return project, err
 	}
 
@@ -263,7 +302,7 @@ func getModule(modules []meta.Package, name string) (meta.Package, error) {
 			return module, nil
 		}
 	}
-	return meta.Package{}, moduleNotFound
+	return meta.Package{}, errModuleNotFound
 }
 
 // If parent pom.xml has modules information in it, go to individual modules pom.xml
@@ -281,7 +320,7 @@ func convertPkgModulesToModule(existingModules []meta.Package, fpath string, mod
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Dependencies {
-		name := strings.Replace(strings.TrimSpace(element.ArtifactID), " ", "-", -1)
+		name := strings.ReplaceAll(strings.TrimSpace(element.ArtifactID), " ", "-")
 		found1 := false
 		found := findInDependency(parentPom.Dependencies, name)
 		if !found {
@@ -303,7 +342,7 @@ func convertPkgModulesToModule(existingModules []meta.Package, fpath string, mod
 
 	// Include plugins from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Build.Plugins {
-		name := strings.Replace(strings.TrimSpace(element.ArtifactID), " ", "-", -1)
+		name := strings.ReplaceAll(strings.TrimSpace(element.ArtifactID), " ", "-")
 		found1 := false
 		found := findInPlugins(parentPom.Build.Plugins, name)
 		if !found {
@@ -368,7 +407,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 
 	dependencyList, err := getDependencyList()
 	if err != nil {
-		fmt.Println("error in getting mvn dependency list and parsing it")
+		log.Println("error in getting mvn dependency list and parsing it")
 		return modules, err
 	}
 
@@ -421,6 +460,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]meta.Packa
 			modules = append(modules, additionalModules...)
 		}
 	}
+
 	return modules, nil
 }
 
@@ -433,7 +473,7 @@ func getTransitiveDependencyList(workingDir string, globalSettingFile string) (m
 		globalSettingOption := "-gs=" + globalSettingFile
 		command = exec.Command("mvn", "dependency:tree", globalSettingOption, "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
 	} else {
-		command = exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
+		command = exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path) //nolint: gosec
 	}
 	command.Dir = workingDir
 	out, err := command.CombinedOutput()
@@ -449,11 +489,11 @@ func getTransitiveDependencyList(workingDir string, globalSettingFile string) (m
 		log.Println(" readAndgetTransitiveDependencyList() failure:", err)
 		return nil, err
 	}
+
 	return tdList, nil
 }
 
 func readAndgetTransitiveDependencyList(path string) (map[string][]string, error) {
-
 	file, err := os.Open(path)
 
 	if err != nil {
@@ -473,6 +513,7 @@ func readAndgetTransitiveDependencyList(path string) (map[string][]string, error
 
 	tdList := map[string][]string{}
 	handlePkgs(text, tdList)
+
 	return tdList, nil
 }
 
@@ -482,6 +523,7 @@ func doesDependencyExists(tdList map[string][]string, lData string, val string) 
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -491,9 +533,10 @@ func handlePkgs(text []string, tdList map[string][]string) {
 	isEmptyMainPkg := false
 
 	for i < len(text) {
-		if strings.Contains(text[i], "{") {
+		switch {
+		case strings.Contains(text[i], "{"):
 			pkgName = strings.Split(text[i], ":")[1]
-		} else if strings.Contains(text[i], "->") {
+		case strings.Contains(text[i], "->"):
 			lhsData := strings.Split(text[i], "->")[0]
 			rhsData := strings.Split(text[i], "->")[1]
 			lData := strings.Split(lhsData, ":")[1]
@@ -505,10 +548,11 @@ func handlePkgs(text []string, tdList map[string][]string) {
 			} else if !doesDependencyExists(tdList, lData, rData) { // check whether dependency already exists
 				tdList[lData] = append(tdList[lData], rData)
 			}
-		} else if strings.Contains(text[i], "}") {
+		case strings.Contains(text[i], "}"):
 			if i == 1 {
 				isEmptyMainPkg = true
 			}
+		default:
 		}
 		i++
 	}
@@ -525,7 +569,6 @@ func buildDependenciesGraph(modules []meta.Package, tdList map[string][]string) 
 
 	for i := range tdList {
 		for j := range tdList[i] {
-
 			if len(tdList[i][j]) > 0 {
 				moduleName := i
 				if _, ok := moduleMap[moduleName]; !ok {

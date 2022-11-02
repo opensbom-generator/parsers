@@ -15,8 +15,6 @@ import (
 
 const pkgMetedataSeparator string = "---"
 
-var httpReplacer = strings.NewReplacer("https://", "", "http://", "")
-
 type GetPackageDetailsFunc = func(PackageName string) (string, error)
 
 type MetadataDecoder struct {
@@ -72,14 +70,14 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 }
 
 func getAddionalMataDataInfo(metadata *Metadata) {
-	metadata.ProjectURL = BuildProjectUrl(metadata.Name)
-	metadata.PackageURL = BuildPackageUrl(metadata.Name)
-	metadata.PackageReleaseURL = BuildPackageReleaseUrl(metadata.Name, metadata.Version)
-	metadata.PackageJsonURL = BuildPackageJsonUrl(metadata.Name, metadata.Version)
+	metadata.ProjectURL = BuildProjectURL(metadata.Name)
+	metadata.PackageURL = BuildPackageURL(metadata.Name)
+	metadata.PackageReleaseURL = BuildPackageReleaseURL(metadata.Name, metadata.Version)
+	metadata.PackageJSONURL = BuildPackageJSONURL(metadata.Name, metadata.Version)
 
 	metadata.DistInfoPath = BuildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
 	metadata.LocalPath = BuildLocalPath(metadata.Location, metadata.Name)
-	metadata.LicensePath = BuildLicenseUrl(metadata.DistInfoPath)
+	metadata.LicensePath = BuildLicenseURL(metadata.DistInfoPath)
 	metadata.MetadataPath = BuildMetadataPath(metadata.DistInfoPath)
 	metadata.WheelPath = BuildWheelPath(metadata.DistInfoPath)
 }
@@ -102,7 +100,7 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 		return nil, nil, errorUnableToFetchPackageMetadata
 	}
 
-	// Metadata of all packages are separated by "---". Split all such occurances and trim to remove leading \n
+	// Metadata of all packages are separated by "---". Split all such occurrences and trim to remove leading \n
 
 	a := regexp.MustCompile(pkgMetedataSeparator)
 	eachpkgsmetadatastr := a.Split(allpkgsmetadatastr, -1)
@@ -146,7 +144,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 		module.PackageURL = metadata.HomePage
 	}
 
-	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJsonURL)
+	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJSONURL)
 	if err != nil {
 		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
 		if (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
@@ -175,12 +173,10 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 	module.Checksum = *checksum
 
 	// Prepare download location
-	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
-	module.PackageDownloadLocation = downloadUrl
-	if len(downloadUrl) == 0 {
+	downloadURL := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
+	module.PackageDownloadLocation = downloadURL
+	if len(downloadURL) == 0 {
 		if metadata.Root {
-			module.PackageDownloadLocation = metadata.HomePage
-		} else {
 			module.PackageDownloadLocation = metadata.HomePage
 		}
 	}

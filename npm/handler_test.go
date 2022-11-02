@@ -52,7 +52,6 @@ func TestGetModule(t *testing.T) {
 	assert.Equal(t, "e-commerce", mod.Name)
 	assert.Equal(t, "ahmed saber", mod.Supplier.Name)
 	assert.Equal(t, "1.0.0", mod.Version)
-
 }
 
 func TestListModules(t *testing.T) {
@@ -64,7 +63,6 @@ func TestListModules(t *testing.T) {
 
 	count := 0
 	for _, mod := range mods {
-
 		if mod.Name == "bcryptjs" {
 			assert.Equal(t, "bcryptjs", mod.Name)
 			assert.Equal(t, "2.4.3", mod.Version)

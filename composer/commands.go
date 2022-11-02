@@ -11,13 +11,13 @@ import (
 type command string
 
 var (
-	VersionCmd              command = "composer --version"
-	ShowModulesCmd          command = "composer show -t -f json"
-	projectInfoCmd          command = "composer show -s -f json"
-	COMPOSER_LOCK_FILE_NAME string  = "composer.lock"
-	COMPOSER_JSON_FILE_NAME string  = "composer.json"
-	PACKAGE_JSON            string  = "package.json"
-	COMPOSER_VENDOR_FOLDER  string  = "vendor"
+	VersionCmd           command = "composer --version"
+	ShowModulesCmd       command = "composer show -t -f json"
+	projectInfoCmd       command = "composer show -s -f json"
+	ComposerLockFileName         = "composer.lock"
+	ComposerJSONFileName         = "composer.json"
+	PackageJSON                  = "package.json"
+	ComposerVendorFolder         = "vendor"
 )
 
 // Parse ...
@@ -26,7 +26,7 @@ func (c command) Parse() []string {
 	return strings.Fields(cmd)
 }
 
-func (m *composer) buildCmd(cmd command, path string) error {
+func (m *Composer) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != "composer" {
 		return errNoComposerCommand
