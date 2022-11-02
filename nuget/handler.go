@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +18,7 @@ import (
 	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
-type nuget struct {
+type Nuget struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
@@ -30,7 +30,7 @@ var (
 	specExt                = ".nuspec"
 	pkgExt                 = ".nupkg"
 	sha512Ext              = ".nupkg.sha512"
-	nugetBaseUrl           = "https://api.nuget.org/v3-flatcontainer/"
+	nugetBaseURL           = "https://api.nuget.org/v3-flatcontainer/"
 	manifestExtensions     = []string{".sln", ".csproj", ".vbproj"}
 	directoryFilterPattern = "*.[^d-u][^c-r]proj"
 	assetDirectoryJoinPath = "obj"
@@ -44,8 +44,8 @@ var (
 )
 
 // New ...
-func New() *nuget {
-	return &nuget{
+func New() *Nuget {
+	return &Nuget{
 		metadata: plugin.Metadata{
 			Name:       "Nuget Package Manager",
 			Slug:       "nuget",
@@ -56,12 +56,12 @@ func New() *nuget {
 }
 
 // GetMetadata ...
-func (m *nuget) GetMetadata() plugin.Metadata {
+func (m *Nuget) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // SetRootModule ...
-func (m *nuget) SetRootModule(path string) error {
+func (m *Nuget) SetRootModule(path string) error {
 	module, err := m.GetRootModule(path)
 	if err != nil {
 		return err
@@ -72,13 +72,13 @@ func (m *nuget) SetRootModule(path string) error {
 }
 
 // IsValid ...
-func (m *nuget) IsValid(path string) bool {
+func (m *Nuget) IsValid(path string) bool {
 	projectPath := m.GetProjectManifestPath(path)
 	return helper.Exists(projectPath)
 }
 
 // HasModulesInstalled ...
-func (m *nuget) HasModulesInstalled(path string) error {
+func (m *Nuget) HasModulesInstalled(path string) error {
 	// TODO: check nuGetFallBackFolderPath cache
 	if err := m.buildCmd(LocalPackageCacheCmd, "."); err != nil {
 		return err
@@ -141,7 +141,7 @@ func (m *nuget) HasModulesInstalled(path string) error {
 }
 
 // GetVersion...
-func (m *nuget) GetVersion() (string, error) {
+func (m *Nuget) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, "."); err != nil {
 		return "", err
 	}
@@ -150,7 +150,7 @@ func (m *nuget) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *nuget) GetRootModule(path string) (*meta.Package, error) {
+func (m *Nuget) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module := meta.Package{}
 		projectPath := m.GetProjectManifestPath(path)
@@ -173,7 +173,7 @@ func (m *nuget) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	var modules []meta.Package
 	projectPath := m.GetProjectManifestPath(path)
 	projectPaths, err := getProjectPaths(projectPath)
@@ -214,12 +214,12 @@ func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]me
 }
 
 // ListUsedModules ...
-func (m *nuget) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Nuget) ListUsedModules(path string) ([]meta.Package, error) {
 	var globalSettingFile string
 	return m.ListModulesWithDeps(path, globalSettingFile)
 }
 
-func (m *nuget) buildCmd(cmd command, path string) error {
+func (m *Nuget) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != dotnetCmd {
 		return errNoDotnetCommand
@@ -237,7 +237,7 @@ func (m *nuget) buildCmd(cmd command, path string) error {
 }
 
 // GetProjectManifestPath ...
-func (m *nuget) GetProjectManifestPath(path string) string {
+func (m *Nuget) GetProjectManifestPath(path string) string {
 	for i := range m.metadata.Manifest {
 		pathPattern := filepath.Join(path, fmt.Sprintf("*%s", m.metadata.Manifest[i]))
 		projectPaths, err := filepath.Glob(pathPattern)
@@ -255,9 +255,9 @@ func (m *nuget) GetProjectManifestPath(path string) string {
 }
 
 // parsePackagesConfigModules parses the output -- works for the packages.config
-func (m *nuget) parsePackagesConfigModules(modulePath string) ([]meta.Package, error) {
+func (m *Nuget) parsePackagesConfigModules(modulePath string) ([]meta.Package, error) {
 	modules := make([]meta.Package, 0)
-	raw, err := ioutil.ReadFile(modulePath)
+	raw, err := os.ReadFile(modulePath)
 	if err != nil {
 		return modules, err
 	}
@@ -277,9 +277,9 @@ func (m *nuget) parsePackagesConfigModules(modulePath string) ([]meta.Package, e
 }
 
 // parseAssetModules parses the output -- works for the project.assets.json
-func (m *nuget) parseAssetModules(modulePath string) ([]meta.Package, error) {
+func (m *Nuget) parseAssetModules(modulePath string) ([]meta.Package, error) {
 	modules := make([]meta.Package, 0)
-	raw, err := ioutil.ReadFile(modulePath)
+	raw, err := os.ReadFile(modulePath)
 	if err != nil {
 		return modules, err
 	}
@@ -359,11 +359,11 @@ func getProjectPaths(path string) ([]string, error) {
 }
 
 // buildModule .. set the properties
-func (m *nuget) buildModule(name string, version string, dependencies map[string]string) (meta.Package, error) {
+func (m *Nuget) buildModule(name string, version string, dependencies map[string]string) (meta.Package, error) {
 	var module meta.Package
 	module.Name = name
 	module.Version = version
-	//get the hash checksum
+	// get the hash checksum
 	checkSum, err := getHashCheckSum(name, version)
 	if err != nil {
 		return module, err
@@ -386,11 +386,13 @@ func (m *nuget) buildModule(name string, version string, dependencies map[string
 			module.LicenseConcluded = extractLicence(nuSpecFile.Meta.License)
 		}
 		module.Copyright = nuSpecFile.Meta.Copyright
-		if nuSpecFile.Meta.Authors != "" {
+
+		switch {
+		case nuSpecFile.Meta.Authors != "":
 			module.Supplier.Name = nuSpecFile.Meta.Authors
-		} else if nuSpecFile.Meta.Owners != "" {
+		case nuSpecFile.Meta.Owners != "":
 			module.Supplier.Name = nuSpecFile.Meta.Owners
-		} else {
+		default:
 			module.Supplier.Name = m.rootModule.Supplier.Name
 		}
 		if nuSpecFile.Meta.Repository.URL != "" {
@@ -435,11 +437,11 @@ func getCachedSpecFilename(name string, version string) string {
 }
 
 // getNugetSpec ...
-func getNugetSpec(name string, version string) (*NugetSpec, error) {
-	nuSpecFile := NugetSpec{}
+func getNugetSpec(name string, version string) (*Spec, error) {
+	nuSpecFile := Spec{}
 	specFileName := getCachedSpecFilename(name, version)
 	if specFileName != "" {
-		raw, err := ioutil.ReadFile(specFileName)
+		raw, err := os.ReadFile(specFileName)
 		if err != nil {
 			return nil, err
 		}
@@ -449,9 +451,9 @@ func getNugetSpec(name string, version string) (*NugetSpec, error) {
 		}
 		return specFile, nil
 	}
-	nugetUrlPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseUrl, name, version, name)
-	nuspecUrl := fmt.Sprintf("%s%s", nugetUrlPrefix, specExt)
-	resp, err := getHttpResponseWithHeaders(nuspecUrl, map[string]string{"content-type": "application/xml"})
+	nugetURLPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseURL, name, version, name)
+	nuspecURL := fmt.Sprintf("%s%s", nugetURLPrefix, specExt)
+	resp, err := getHTTPResponseWithHeaders(nuspecURL, map[string]string{"content-type": "application/xml"})
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +465,7 @@ func getNugetSpec(name string, version string) (*NugetSpec, error) {
 		}
 	}()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -487,13 +489,13 @@ func getHashCheckSum(name string, version string) (*meta.Checksum, error) {
 		// change the extension - pkgExt
 		pkgName := fileName + fmt.Sprintf("%s.%s%s", fileName, version, pkgExt)
 		if helper.Exists(shaName) {
-			shaFileData, err := ioutil.ReadFile(shaName)
+			shaFileData, err := os.ReadFile(shaName)
 			if err != nil {
 				return nil, err
 			}
 			fileData = shaFileData
 		} else if helper.Exists(pkgName) {
-			shaFileData, err := ioutil.ReadFile(pkgName)
+			shaFileData, err := os.ReadFile(pkgName)
 			if err != nil {
 				return nil, err
 			}
@@ -506,9 +508,9 @@ func getHashCheckSum(name string, version string) (*meta.Checksum, error) {
 			Content:   fileData,
 		}, nil
 	}
-	nugetUrlPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseUrl, name, version, name)
-	nuPkgUrl := fmt.Sprintf("%s.%s%s", nugetUrlPrefix, version, pkgExt)
-	resp, err := getHttpResponseWithHeaders(nuPkgUrl, map[string]string{"content-type": "application/xml"})
+	nugetURLPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseURL, name, version, name)
+	nuPkgURL := fmt.Sprintf("%s.%s%s", nugetURLPrefix, version, pkgExt)
+	resp, err := getHTTPResponseWithHeaders(nuPkgURL, map[string]string{"content-type": "application/xml"})
 	if err != nil {
 		return nil, err
 	}
@@ -519,7 +521,7 @@ func getHashCheckSum(name string, version string) (*meta.Checksum, error) {
 		}
 	}()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
