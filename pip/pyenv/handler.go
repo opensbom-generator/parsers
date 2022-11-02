@@ -16,9 +16,6 @@ import (
 )
 
 const cmdName = "python"
-const osWin = "windows"
-const osDarwin = "darwin"
-const osLinux = "linux"
 const winExecutable = "Scripts"
 const lxExecutable = "bin"
 const manifestFile = "requirements.txt"
@@ -73,7 +70,7 @@ func (m *PyEnv) IsValid(path string) bool {
 // HasModulesInstalled
 func (m *PyEnv) HasModulesInstalled(path string) error {
 	dir := m.GetExecutableDir()
-	ModulesCmd := GetExecutableCommand(ModulesCmd)
+	ModulesCmd := getExecutableCommand(ModulesCmd)
 	if err := m.buildCmd(ModulesCmd, dir); err != nil {
 		return err
 	}
@@ -92,7 +89,7 @@ func (m *PyEnv) GetVersion() (string, error) {
 	runme := m.fetchVenvPath()
 	if runme {
 		dir := m.GetExecutableDir()
-		VersionCmd := GetExecutableCommand(VersionCmd)
+		VersionCmd := getExecutableCommand(VersionCmd)
 		if err = m.buildCmd(VersionCmd, dir); err != nil {
 			return "", err
 		}
@@ -177,7 +174,7 @@ func (m *PyEnv) GetExecutableDir() string {
 }
 
 func (m *PyEnv) GetPackageDetails(packageName string) (string, error) {
-	MetadataCmd := GetExecutableCommand(MetadataCmd)
+	MetadataCmd := getExecutableCommand(MetadataCmd)
 	MetadataCmd = command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
 	dir := m.GetExecutableDir()
 
@@ -194,7 +191,7 @@ func (m *PyEnv) GetPackageDetails(packageName string) (string, error) {
 
 func (m *PyEnv) PushRootModuleToVenv() (bool, error) {
 	dir := m.GetExecutableDir()
-	InstallRootModuleCmd := GetExecutableCommand(InstallRootModuleCmd)
+	InstallRootModuleCmd := getExecutableCommand(InstallRootModuleCmd)
 	if err := m.buildCmd(InstallRootModuleCmd, dir); err != nil {
 		return false, err
 	}
@@ -224,7 +221,7 @@ func (m *PyEnv) LoadModuleList(path string) error {
 			return err
 		}
 		dir := m.GetExecutableDir()
-		ModulesCmd := GetExecutableCommand(ModulesCmd)
+		ModulesCmd := getExecutableCommand(ModulesCmd)
 		if err := m.buildCmd(ModulesCmd, dir); err != nil {
 			return err
 		}
@@ -260,10 +257,9 @@ func (m *PyEnv) fetchVenvPath() bool {
 	return false
 }
 
-func GetExecutableCommand(cmd command) command {
-	os := runtime.GOOS
-	switch os {
-	case osWin:
+func getExecutableCommand(cmd command) command {
+	switch runtime.GOOS {
+	case "windows":
 		return command(strings.ReplaceAll(string(cmd), placeholderExecutableName, winExecutable))
 	default:
 		return command(strings.ReplaceAll(string(cmd), placeholderExecutableName, lxExecutable))
