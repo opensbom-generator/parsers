@@ -24,13 +24,13 @@ const manifestFile = "requirements.txt"
 const placeholderPkgName = "{PACKAGE}"
 const placeholderExecutableName = "{executable}"
 
-var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`")
-var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
-var errNoPipCommand = errors.New("Cannot find the python command")
-var errVersionNotFound = errors.New("Python version not found")
-var errFailedToConvertModules = errors.New("Failed to convert modules")
+var errDependenciesNotFound = errors.New("unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`")
+var errBuildlingModuleDependencies = errors.New("error building module dependencies")
+var errNoPipCommand = errors.New("cannot find the python command")
+var errVersionNotFound = errors.New("python version not found")
+var errFailedToConvertModules = errors.New("failed to convert modules")
 
-type pyenv struct {
+type PyEnv struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
@@ -43,8 +43,8 @@ type pyenv struct {
 }
 
 // New ...
-func New() *pyenv {
-	return &pyenv{
+func New() *PyEnv {
+	return &PyEnv{
 		metadata: plugin.Metadata{
 			Name:       "The Python Package Index (PyPI)",
 			Slug:       "pyenv",
@@ -55,12 +55,12 @@ func New() *pyenv {
 }
 
 // Get Metadata ...
-func (m *pyenv) GetMetadata() plugin.Metadata {
+func (m *PyEnv) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // Is Valid ...
-func (m *pyenv) IsValid(path string) bool {
+func (m *PyEnv) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -70,7 +70,7 @@ func (m *pyenv) IsValid(path string) bool {
 }
 
 // HasModulesInstalled
-func (m *pyenv) HasModulesInstalled(path string) error {
+func (m *PyEnv) HasModulesInstalled(path string) error {
 	dir := m.GetExecutableDir()
 	ModulesCmd := GetExecutableCommand(ModulesCmd)
 	if err := m.buildCmd(ModulesCmd, dir); err != nil {
@@ -84,7 +84,7 @@ func (m *pyenv) HasModulesInstalled(path string) error {
 }
 
 // Get Version ...
-func (m *pyenv) GetVersion() (string, error) {
+func (m *PyEnv) GetVersion() (string, error) {
 	version := "Python"
 	err := errVersionNotFound
 
@@ -106,13 +106,13 @@ func (m *pyenv) GetVersion() (string, error) {
 }
 
 // Set Root Module ...
-func (m *pyenv) SetRootModule(path string) error {
+func (m *PyEnv) SetRootModule(path string) error {
 	m.basepath = path
 	return nil
 }
 
 // Get Root Module ...
-func (m *pyenv) GetRootModule(path string) (*meta.Package, error) {
+func (m *PyEnv) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module := m.fetchRootModule()
 		m.rootModule = &module
@@ -121,7 +121,7 @@ func (m *pyenv) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // List Used Modules...
-func (m *pyenv) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *PyEnv) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
@@ -137,19 +137,21 @@ func (m *pyenv) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 // List Modules With Deps ...
-func (m *pyenv) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *PyEnv) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
 	}
-	m.GetRootModule(path)
+	if _, err := m.GetRootModule(path); err != nil {
+		return nil, err
+	}
 	if err := worker.BuildDependencyGraph(&m.allModules, &m.metainfo); err != nil {
 		return nil, err
 	}
 	return modules, err
 }
 
-func (m *pyenv) buildCmd(cmd command, path string) error {
+func (m *PyEnv) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if !strings.Contains(cmdArgs[0], cmdName) {
 		return errNoPipCommand
@@ -166,19 +168,21 @@ func (m *pyenv) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-func (m *pyenv) GetExecutableDir() string {
+func (m *PyEnv) GetExecutableDir() string {
 	if len(m.metadata.ModulePath[0]) > 0 {
 		return m.metadata.ModulePath[0]
 	}
 	return m.basepath
 }
 
-func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
+func (m *PyEnv) GetPackageDetails(packageName string) (string, error) {
 	MetadataCmd := GetExecutableCommand(MetadataCmd)
 	MetadataCmd = command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
 	dir := m.GetExecutableDir()
 
-	m.buildCmd(MetadataCmd, dir)
+	if err := m.buildCmd(MetadataCmd, dir); err != nil {
+		return "", err
+	}
 	result, err := m.command.Output()
 	if err != nil {
 		return "", err
@@ -187,7 +191,7 @@ func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
 	return result, nil
 }
 
-func (m *pyenv) PushRootModuleToVenv() (bool, error) {
+func (m *PyEnv) PushRootModuleToVenv() (bool, error) {
 	dir := m.GetExecutableDir()
 	InstallRootModuleCmd := GetExecutableCommand(InstallRootModuleCmd)
 	if err := m.buildCmd(InstallRootModuleCmd, dir); err != nil {
@@ -200,7 +204,7 @@ func (m *pyenv) PushRootModuleToVenv() (bool, error) {
 	return false, nil
 }
 
-func (m *pyenv) markRootModue() {
+func (m *PyEnv) markRootModue() {
 	for i, pkg := range m.pkgs {
 		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
@@ -209,7 +213,7 @@ func (m *pyenv) markRootModue() {
 	}
 }
 
-func (m *pyenv) LoadModuleList(path string) error {
+func (m *PyEnv) LoadModuleList(path string) error {
 	var state bool
 	var err error
 
@@ -220,7 +224,9 @@ func (m *pyenv) LoadModuleList(path string) error {
 		}
 		dir := m.GetExecutableDir()
 		ModulesCmd := GetExecutableCommand(ModulesCmd)
-		m.buildCmd(ModulesCmd, dir)
+		if err := m.buildCmd(ModulesCmd, dir); err != nil {
+			return err
+		}
 		result, err := m.command.Output()
 		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 			m.pkgs = worker.LoadModules(result, m.version)
@@ -231,7 +237,7 @@ func (m *pyenv) LoadModuleList(path string) error {
 	return err
 }
 
-func (m *pyenv) fetchRootModule() meta.Package {
+func (m *PyEnv) fetchRootModule() meta.Package {
 	for _, mod := range m.allModules {
 		if mod.Root {
 			return mod
@@ -240,7 +246,7 @@ func (m *pyenv) fetchRootModule() meta.Package {
 	return meta.Package{}
 }
 
-func (m *pyenv) fetchVenvPath() bool {
+func (m *PyEnv) fetchVenvPath() bool {
 	state, venv, venvpath := worker.SearchVenv(m.basepath)
 	if state && len(venv) > 0 {
 		m.venv = venv
