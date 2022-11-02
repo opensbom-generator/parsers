@@ -8,5 +8,7 @@ import (
 
 type errType error
 
-var errFailedToConvertModules errType = errors.New("failed to convert modules")
-var moduleNotFound errType = errors.New("module not found")
+var (
+	errFailedToConvertModules errType = errors.New("failed to convert modules")
+	errModuleNotFound         errType = errors.New("module not found")
+)

@@ -2,12 +2,12 @@
 
 package swift
 
-type SwiftPackageDescription struct {
+type PackageDescription struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 
 	Dependencies []struct {
-		Url         string `json:"url"`
+		URL         string `json:"url"`
 		Requirement struct {
 			Revision []string `json:"revision"`
 			Range    []struct {
@@ -42,10 +42,10 @@ type SwiftPackageDescription struct {
 	ToolVersion string `json:"tools_version"`
 }
 
-type SwiftPackageDependency struct {
-	Name         string                   `json:"name"`
-	Url          string                   `json:"url"`
-	Version      string                   `json:"version"`
-	Path         string                   `json:"path"`
-	Dependencies []SwiftPackageDependency `json:"dependencies"`
+type PackageDependency struct {
+	Name         string              `json:"name"`
+	URL          string              `json:"url"`
+	Version      string              `json:"version"`
+	Path         string              `json:"path"`
+	Dependencies []PackageDependency `json:"dependencies"`
 }

@@ -3,6 +3,7 @@
 package worker
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -15,16 +16,20 @@ import (
 )
 
 // Virtual env constants
-const manifestSetupPy = "setup.py"
-const manifestSetupCfg = "setup.cfg"
-const ModuleDotVenv = ".venv"
-const ModuleVenv = "venv"
-const PyvenvCfg = "pyvenv.cfg"
-const VirtualEnv = "VIRTUAL_ENV"
+const (
+	manifestSetupPy  = "setup.py"
+	manifestSetupCfg = "setup.cfg"
+	ModuleDotVenv    = ".venv"
+	ModuleVenv       = "venv"
+	PyvenvCfg        = "pyvenv.cfg"
+	VirtualEnv       = "VIRTUAL_ENV"
+)
 
-var errorWheelFileNotFound = fmt.Errorf("Wheel file not found")
-var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open wheel file")
-var errorUnableToFetchPackageMetadata = fmt.Errorf("Unable to fetch package details")
+var (
+	errorWheelFileNotFound            = fmt.Errorf("wheel file not found")
+	errorUnableToOpenWheelFile        = fmt.Errorf("unable to open wheel file")
+	errorUnableToFetchPackageMetadata = fmt.Errorf("unable to fetch package details")
+)
 
 func IsRequirementMeet(data string) bool {
 	_modules := LoadModules(data, "")
@@ -77,10 +82,11 @@ func ScanPyvenvCfg(files *string, folderpath *string) filepath.WalkFunc {
 }
 
 func SearchVenv(path string) (bool, string, string) {
-	var venv string
-	var venvfullpath string
-	var state bool
-
+	var (
+		venv         string
+		venvfullpath string
+		state        bool
+	)
 	// if virtual env is active
 	state, venv, venvfullpath = GetVenFromEnvs()
 	if state {
@@ -93,7 +99,7 @@ func SearchVenv(path string) (bool, string, string) {
 	}
 
 	err := filepath.Walk(path, ScanPyvenvCfg(&venv, &venvfullpath))
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		err = nil
 	}
 
@@ -114,7 +120,7 @@ func IsValidRootModule(path string) bool {
 	return false
 }
 
-func IsRootModule(pkg Packages, pip_type string) bool {
+func IsRootModule(pkg Packages, pipType string) bool {
 	osWin := "windows"
 	osDarwin := "darwin"
 	osLinux := "linux"
@@ -122,18 +128,21 @@ func IsRootModule(pkg Packages, pip_type string) bool {
 	poetry := "poetry"
 	pyenv := "pyenv"
 	os := runtime.GOOS
-	if os == osWin && (pip_type == pipenv || pip_type == pyenv) {
+	switch {
+	case os == osWin && (pipType == pipenv || pipType == pyenv):
 		if !strings.Contains(pkg.Location, "\\src\\") && !strings.Contains(pkg.Location, "\\site-packages") {
 			return true
 		}
-	} else if (os == osDarwin || os == osLinux) && (pip_type == pipenv || pip_type == pyenv) {
+	case (os == osDarwin || os == osLinux) && (pipType == pipenv || pipType == pyenv):
 		if !strings.Contains(pkg.Location, "/src/") && !strings.Contains(pkg.Location, "/site-packages") {
 			return true
 		}
-	} else if (os == osWin || os == osLinux || os == osDarwin) && pip_type == poetry {
+	case (os == osWin || os == osLinux || os == osDarwin) && pipType == poetry:
 		if pkg.Installer == poetry {
 			return true
 		}
+	default:
 	}
+
 	return false
 }

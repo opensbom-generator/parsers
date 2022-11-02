@@ -11,7 +11,7 @@ import (
 	"github.com/go-git/go-git/v5"
 )
 
-func getHttpResponseWithHeaders(url string, headers map[string]string) (*http.Response, error) {
+func getHTTPResponseWithHeaders(url string, headers map[string]string) (*http.Response, error) {
 	var netClient = &http.Client{
 		Timeout: time.Second * 30,
 	}

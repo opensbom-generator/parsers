@@ -14,36 +14,36 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 )
 
-func (description SwiftPackageDescription) Module() *meta.Package {
+func (description PackageDescription) Module() *meta.Package {
 	mod := &meta.Package{}
 
 	mod.Name = description.Name
 	mod.Root = true
 	mod.LocalPath = description.Path
-	setLicense(mod, description.Path)
-	setCheckSum(mod, description.Path)
-	setVersion(mod, description.Path)
+	_ = setLicense(mod, description.Path)
+	_ = setCheckSum(mod, description.Path)
+	_ = setVersion(mod, description.Path)
 
 	return mod
 }
 
-func (dep SwiftPackageDependency) Module() *meta.Package {
+func (dep PackageDependency) Module() *meta.Package {
 	mod := &meta.Package{}
 	mod.Name = dep.Name
-	mod.PackageURL = strings.TrimSuffix(dep.Url, ".git")
+	mod.PackageURL = strings.TrimSuffix(dep.URL, ".git")
 
-	if strings.HasSuffix(dep.Url, ".git") {
-		if strings.HasPrefix(dep.Url, "http") ||
-			strings.HasPrefix(dep.Url, "ssh") ||
-			strings.HasPrefix(dep.Url, "git@") {
-			mod.PackageDownloadLocation = "git+" + dep.Url
+	if strings.HasSuffix(dep.URL, ".git") {
+		if strings.HasPrefix(dep.URL, "http") ||
+			strings.HasPrefix(dep.URL, "ssh") ||
+			strings.HasPrefix(dep.URL, "git@") {
+			mod.PackageDownloadLocation = "git+" + dep.URL
 		}
 	}
 
 	mod.Version = dep.Version
 	mod.LocalPath = dep.Path
-	setLicense(mod, dep.Path)
-	setCheckSum(mod, dep.Path)
+	_ = setLicense(mod, dep.Path)
+	_ = setCheckSum(mod, dep.Path)
 
 	return mod
 }

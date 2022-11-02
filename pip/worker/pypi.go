@@ -5,7 +5,7 @@ package worker
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -13,8 +13,9 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 )
 
-var errorPackageDigestNotFound = errors.New("Digest not found")
-var errorPypiCouldNotFetchPkgData = errors.New("Could not fetch package data from PyPI")
+var (
+	errorPypiCouldNotFetchPkgData = errors.New("could not fetch package data from PyPI")
+)
 
 type PypiPackageData struct {
 	Info PypiPackageInfo       `json:"info"`
@@ -68,7 +69,7 @@ type DigestTypes struct {
 	SHA256 string `json:"sha256"`
 }
 
-// Order in which we want to pick the package digest
+// HashAlgoPickOrder Order in which we want to pick the package digest
 var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
 	meta.HashAlgoSHA512,
 	meta.HashAlgoSHA384,
@@ -81,8 +82,8 @@ var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
 	meta.HashAlgoMD2,
 }
 
-func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
-	url := "https://" + packageJsonUrl
+func makeGetRequest(packageJSONURL string) (*http.Response, error) {
+	url := "https://" + packageJSONURL
 
 	request, _ := http.NewRequest("GET", url, nil)
 	request.Header.Set("Accept", "application/json")
@@ -100,16 +101,16 @@ func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
 	return response, err
 }
 
-func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
+func GetPackageDataFromPyPi(packageJSONURL string) (PypiPackageData, error) {
 	packageInfo := PypiPackageData{}
 
-	response, err := makeGetRequest(packageJsonUrl)
+	response, err := makeGetRequest(packageJSONURL)
 	if err != nil {
 		return packageInfo, err
 	}
 	defer response.Body.Close()
 
-	jsondata, _ := ioutil.ReadAll(response.Body)
+	jsondata, _ := io.ReadAll(response.Body)
 
 	err = json.Unmarshal(jsondata, &packageInfo)
 	if err != nil {
@@ -136,7 +137,6 @@ func GetHighestOrderHashData(digests DigestTypes) (meta.HashAlgorithm, string) {
 
 	v := reflect.ValueOf(digests)
 	for _, algo := range HashAlgoPickOrder {
-
 		f := v.FieldByName(string(algo))
 		if f.IsValid() {
 			algoType = algo

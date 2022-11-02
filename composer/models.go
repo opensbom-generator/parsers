@@ -2,57 +2,57 @@
 
 package composer
 
-type ComposerLockFile struct {
-	Packages    []ComposerLockPackage
-	PackagesDev []ComposerLockPackage `json:"packages-dev"`
+type LockFile struct {
+	Packages    []LockPackage
+	PackagesDev []LockPackage `json:"packages-dev"`
 }
 
-type ComposerLockPackage struct {
+type LockPackage struct {
 	Name        string
 	Version     string
 	Type        string
-	Dist        ComposerLockPackageDist
+	Dist        LockPackageDist
 	License     []string
 	Description string
-	Source      ComposerLockPackageSource
-	Authors     []ComposerLockPackageAuthor
+	Source      LockPackageSource
+	Authors     []LockPackageAuthor
 	Homepage    string
 }
-type ComposerLockPackageAuthor struct {
+type LockPackageAuthor struct {
 	Name  string
 	Email string
 }
 
-type ComposerLockPackageSource struct {
+type LockPackageSource struct {
 	Type      string
 	URL       string
 	Reference string
 }
 
-type ComposerLockPackageDist struct {
+type LockPackageDist struct {
 	Type      string
 	URL       string
 	Reference string
 	Shasum    string
 }
 
-type ComposerProjectInfo struct {
+type ProjectInfo struct {
 	Name        string
 	Description string
 	Versions    []string
 }
 
-type ComposerTreeList struct {
-	Installed []ComposerTreeComponent
+type TreeList struct {
+	Installed []TreeComponent
 }
-type ComposerTreeComponent struct {
+type TreeComponent struct {
 	Name        string
 	Version     string
 	Description string
-	Requires    []ComposerTreeComponent
+	Requires    []TreeComponent
 }
 
-type ComposerJSONObject struct {
+type JSONObject struct {
 	Name        string   `json:"name"`
 	Type        string   `json:"type"`
 	Description string   `json:"description"`

@@ -7,14 +7,14 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 )
 
-func (m *composer) getRootProjectInfo(path string) (meta.Package, error) {
+func (m *Composer) getRootProjectInfo(path string) (meta.Package, error) {
 	if err := m.buildCmd(projectInfoCmd, path); err != nil {
 		return meta.Package{}, err
 	}
@@ -25,7 +25,7 @@ func (m *composer) getRootProjectInfo(path string) (meta.Package, error) {
 	}
 	defer buffer.Reset()
 
-	var projectInfo ComposerProjectInfo
+	var projectInfo ProjectInfo
 
 	err := json.NewDecoder(buffer).Decode(&projectInfo)
 	if err != nil {
@@ -35,27 +35,22 @@ func (m *composer) getRootProjectInfo(path string) (meta.Package, error) {
 		return meta.Package{}, errRootProject
 	}
 
-	module, err := convertProjectInfoToModule(projectInfo, path)
-	if err != nil {
-		return meta.Package{}, err
-	}
-
+	module := convertProjectInfoToModule(projectInfo, path)
 	return module, nil
 }
 
-func convertProjectInfoToModule(project ComposerProjectInfo, path string) (meta.Package, error) {
-
+func convertProjectInfoToModule(project ProjectInfo, path string) meta.Package {
 	version := normalizePackageVersion(project.Versions[0])
-	packageUrl := genComposerUrl(project.Name, version)
+	packageURL := genComposerURL(project.Name)
 
-	if packageUrl == "" {
-		composerJson, _ := getComposerJSONFileData()
-		packageUrl = composerJson.Homepage
+	if packageURL == "" {
+		composerJSON, _ := getComposerJSONFileData()
+		packageURL = composerJSON.Homepage
 	}
 
-	packageDownloadLocation := rootPackageDownloadLocation(packageUrl)
+	packageDownloadLocation := rootPackageDownloadLocation(packageURL)
 
-	checkSumValue := readCheckSum(packageUrl)
+	checkSumValue := readCheckSum(packageURL)
 	name := getName(project.Name)
 	supplier := rootProjectSupplier(name)
 
@@ -63,7 +58,7 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (meta.
 		Name:       name,
 		Version:    version,
 		Root:       true,
-		PackageURL: packageUrl,
+		PackageURL: packageURL,
 		Checksum: meta.Checksum{
 			Algorithm: meta.HashAlgoSHA1,
 			Value:     checkSumValue,
@@ -80,12 +75,12 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (meta.
 		module.CommentsLicense = licensePkg.Comments
 	}
 
-	return module, nil
+	return module
 }
 
 func rootPackageDownloadLocation(defaultValue string) string {
-	packageJson, _ := getPackageJSONFileData()
-	packageDownloadLocation := packageJson.Repository.URL
+	packageJSON, _ := getPackageJSONFileData()
+	packageDownloadLocation := packageJSON.Repository.URL
 
 	if packageDownloadLocation == "" {
 		packageDownloadLocation = defaultValue
@@ -99,17 +94,16 @@ func rootPackageDownloadLocation(defaultValue string) string {
 		packageDownloadLocation = "https://" + packageDownloadLocation
 	}
 	if isGithub && !hasGitSuffix {
-		packageDownloadLocation = packageDownloadLocation + ".git"
+		packageDownloadLocation += ".git"
 	}
 
 	return packageDownloadLocation
 }
 
 func rootProjectSupplier(projectName string) meta.Supplier {
-
-	composerJson, _ := getComposerJSONFileData()
-	if len(composerJson.Authors) > 0 {
-		author := composerJson.Authors[0]
+	composerJSON, _ := getComposerJSONFileData()
+	if len(composerJSON.Authors) > 0 {
+		author := composerJSON.Authors[0]
 		return meta.Supplier{
 			Name:  author.Name,
 			Email: author.Email,
@@ -123,27 +117,27 @@ func rootProjectSupplier(projectName string) meta.Supplier {
 	}
 }
 
-func (m *composer) getTreeListFromComposerShowTree(path string) (ComposerTreeList, error) {
+func (m *Composer) getTreeListFromComposerShowTree(path string) (TreeList, error) {
 	if err := m.buildCmd(ShowModulesCmd, path); err != nil {
-		return ComposerTreeList{}, err
+		return TreeList{}, err
 	}
 
 	buffer := new(bytes.Buffer)
 	if err := m.command.Execute(buffer); err != nil {
-		return ComposerTreeList{}, err
+		return TreeList{}, err
 	}
 	defer buffer.Reset()
 
-	var tree ComposerTreeList
+	var tree TreeList
 	err := json.NewDecoder(buffer).Decode(&tree)
 	if err != nil {
-		return ComposerTreeList{}, err
+		return TreeList{}, err
 	}
 
 	return tree, nil
 }
 
-func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []meta.Package) bool {
+func addTreeComponentsToModule(treeComponent TreeComponent, modules []meta.Package) bool { //nolint: unparam
 	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 	for idx, module := range modules {
@@ -201,36 +195,38 @@ func addSubModuleToAModule(modules []meta.Package, moduleIndex int, subModule me
 	}
 }
 
-func getComposerLockFileData() (ComposerLockFile, error) {
-	raw, err := ioutil.ReadFile(COMPOSER_LOCK_FILE_NAME)
+func getComposerLockFileData() (LockFile, error) {
+	raw, err := os.ReadFile(ComposerLockFileName)
 	if err != nil {
-		return ComposerLockFile{}, err
+		return LockFile{}, err
 	}
 
-	var fileData ComposerLockFile
+	var fileData LockFile
 	err = json.Unmarshal(raw, &fileData)
 	if err != nil {
-		return ComposerLockFile{}, err
+		return LockFile{}, err
 	}
+
 	return fileData, nil
 }
-func getComposerJSONFileData() (ComposerJSONObject, error) {
 
-	raw, err := ioutil.ReadFile(COMPOSER_JSON_FILE_NAME)
+func getComposerJSONFileData() (JSONObject, error) {
+	raw, err := os.ReadFile(ComposerJSONFileName)
 	if err != nil {
-		return ComposerJSONObject{}, err
+		return JSONObject{}, err
 	}
 
-	var fileData ComposerJSONObject
+	var fileData JSONObject
 	err = json.Unmarshal(raw, &fileData)
 	if err != nil {
-		return ComposerJSONObject{}, err
+		return JSONObject{}, err
 	}
+
 	return fileData, nil
 }
+
 func getPackageJSONFileData() (PackageJSONObject, error) {
-
-	raw, err := ioutil.ReadFile(PACKAGE_JSON)
+	raw, err := os.ReadFile(PackageJSON)
 	if err != nil {
 		return PackageJSONObject{}, err
 	}
@@ -240,10 +236,11 @@ func getPackageJSONFileData() (PackageJSONObject, error) {
 	if err != nil {
 		return PackageJSONObject{}, err
 	}
+
 	return fileData, nil
 }
 
-func (m *composer) getModulesFromComposerLockFile(path string) ([]meta.Package, error) {
+func (m *Composer) getModulesFromComposerLockFile(path string) ([]meta.Package, error) {
 	modules := make([]meta.Package, 0)
 
 	info, err := getComposerLockFileData()
@@ -275,12 +272,12 @@ func (m *composer) getModulesFromComposerLockFile(path string) ([]meta.Package, 
 	return modules, nil
 }
 
-func convertLockPackageToModule(dep ComposerLockPackage) meta.Package {
+func convertLockPackageToModule(dep LockPackage) meta.Package {
 	module := meta.Package{
 		Version:                 normalizePackageVersion(dep.Version),
 		Name:                    getName(dep.Name),
 		Root:                    false,
-		PackageURL:              genUrlFromComposerPackage(dep),
+		PackageURL:              genURLFromComposerPackage(dep),
 		PackageDownloadLocation: dep.Source.URL,
 		Checksum: meta.Checksum{
 			Algorithm: meta.HashAlgoSHA1,
@@ -306,7 +303,7 @@ func convertLockPackageToModule(dep ComposerLockPackage) meta.Package {
 	return module
 }
 
-func getAuthorFromComposerLockFileDep(dep ComposerLockPackage) meta.Supplier {
+func getAuthorFromComposerLockFileDep(dep LockPackage) meta.Supplier {
 	authors := dep.Authors
 	if len(authors) == 0 {
 		return meta.Supplier{
@@ -337,7 +334,7 @@ func getName(moduleName string) string {
 	return groupNames[0]
 }
 
-func genUrlFromComposerPackage(dep ComposerLockPackage) string {
+func genURLFromComposerPackage(dep LockPackage) string {
 	homePage := dep.Homepage
 	if homePage != "" {
 		return removeURLProtocol(homePage)
@@ -349,10 +346,11 @@ func genUrlFromComposerPackage(dep ComposerLockPackage) string {
 		return gitURL
 	}
 
-	createdURL := genComposerUrl(dep.Name, dep.Version)
+	createdURL := genComposerURL(dep.Name)
 	return createdURL
 }
-func genComposerUrl(name string, version string) string {
+
+func genComposerURL(name string) string {
 	return "github.com/" + name
 }
 
@@ -370,13 +368,13 @@ func normalizePackageVersion(version string) string {
 	return parts[0]
 }
 
-func getCheckSumValue(module ComposerLockPackage) string {
+func getCheckSumValue(module LockPackage) string {
 	value := module.Dist.Shasum
 	if value != "" {
 		return value
 	}
 
-	return readCheckSum(genUrlFromComposerPackage(module))
+	return readCheckSum(genURLFromComposerPackage(module))
 }
 
 func readCheckSum(content string) string {
@@ -388,7 +386,7 @@ func readCheckSum(content string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func getLocalPath(module ComposerLockPackage) string {
+func getLocalPath(module LockPackage) string {
 	path := "./vendor/" + module.Name
 	return path
 }

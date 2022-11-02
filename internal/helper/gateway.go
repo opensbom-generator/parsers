@@ -9,14 +9,14 @@ import (
 )
 
 type Client struct {
-	Http *http.Client
+	HTTP *http.Client
 }
 
 // NewClient
 // todo: complete proper client settings
 func NewClient() *Client {
 	return &Client{
-		Http: &http.Client{
+		HTTP: &http.Client{
 			Timeout: time.Second * 5,
 		},
 	}
@@ -34,7 +34,7 @@ func (c *Client) ParseURL(uri string) *url.URL {
 
 // CheckURL ...
 func (c *Client) CheckURL(url string) bool {
-	r, err := c.Http.Get(url)
+	r, err := c.HTTP.Get(url)
 	if err != nil {
 		return false
 	}

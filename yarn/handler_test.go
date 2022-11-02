@@ -63,7 +63,6 @@ func TestListModules(t *testing.T) {
 
 	count := 0
 	for _, mod := range mods {
-
 		if mod.Name == "axios" {
 			assert.Equal(t, "axios", mod.Name)
 			assert.Equal(t, "0.19.0", mod.Version)

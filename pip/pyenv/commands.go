@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-type command string
+type Command string
 
 // assume each project is using python3 default
 const (
-	VersionCmd           command = "{executable}/python -V"                           // generic to check version
-	ModulesCmd           command = "{executable}/python -m pip list -v --format json" // venv is local
-	MetadataCmd          command = "{executable}/python -m pip show {PACKAGE}"
-	InstallRootModuleCmd command = "{executable}/python -m pip install -e .."
+	VersionCmd           Command = "{executable}/python -V"                           // generic to check version
+	ModulesCmd           Command = "{executable}/python -m pip list -v --format json" // venv is local
+	MetadataCmd          Command = "{executable}/python -m pip show {PACKAGE}"
+	InstallRootModuleCmd Command = "{executable}/python -m pip install -e .."
 )
 
 // Parse ...
-func (c command) Parse() []string {
+func (c Command) Parse() []string {
 	cmd := strings.TrimSpace(string(c))
 	return strings.Fields(cmd)
 }

@@ -12,27 +12,27 @@ import (
 	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
-const ProjectUrl = "pypi.org/project"
-const PackageUrl = "pypi.org/pypi"
-const SitePackage = "site-packages"
-const PackageDistInfoPath = ".dist-info"
-const PackageLicenseFile = "LICENSE"
-const PackageMetadataFie = "METADATA"
-const PackageWheelFie = "WHEEL"
-
-// NOASSERTION constant
-const NoAssertion = "NOASSERTION"
-
 const (
-	KeyName        string = "name"
-	KeyVersion     string = "version"
-	KeySummary     string = "summary"
-	KeyHomePage    string = "home-page"
-	KeyAuthor      string = "author"
-	KeyAuthorEmail string = "author-email"
-	KeyLicense     string = "license"
-	KeyLocation    string = "location"
-	KeyRequires    string = "requires"
+	ProjectURL          = "pypi.org/project"
+	PackageURL          = "pypi.org/pypi"
+	SitePackage         = "site-packages"
+	PackageDistInfoPath = ".dist-info"
+	PackageLicenseFile  = "LICENSE"
+	PackageMetadataFie  = "METADATA"
+	PackageWheelFie     = "WHEEL"
+
+	// NOASSERTION constant
+	NoAssertion = "NOASSERTION"
+
+	KeyName        = "name"
+	KeyVersion     = "version"
+	KeySummary     = "summary"
+	KeyHomePage    = "home-page"
+	KeyAuthor      = "author"
+	KeyAuthorEmail = "author-email"
+	KeyLicense     = "license"
+	KeyLocation    = "location"
+	KeyRequires    = "requires"
 )
 
 var AuthorAnOrganizationKeywords = []string{"Authority", "Team", "Developers", "Services", "Foundation", "Software"}
@@ -54,7 +54,7 @@ type Metadata struct {
 	Description       string
 	ProjectURL        string
 	PackageURL        string
-	PackageJsonURL    string
+	PackageJSONURL    string
 	PackageReleaseURL string
 	HomePage          string
 	Author            string
@@ -107,7 +107,7 @@ func GetShortPythonVersion(version string) string {
 
 func LoadModules(data string, version string) []Packages {
 	var _modules []Packages
-	json.Unmarshal([]byte(data), &_modules)
+	_ = json.Unmarshal([]byte(data), &_modules)
 	for i, mod := range _modules {
 		mod.CPVersion = version
 		_modules[i] = mod
@@ -115,23 +115,23 @@ func LoadModules(data string, version string) []Packages {
 	return _modules
 }
 
-func BuildProjectUrl(name string) string {
-	paths := []string{ProjectUrl, name}
+func BuildProjectURL(name string) string {
+	paths := []string{PackageURL, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageUrl(name string) string {
-	paths := []string{PackageUrl, name}
+func BuildPackageURL(name string) string {
+	paths := []string{PackageURL, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageJsonUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version, "json"}
+func BuildPackageJSONURL(name string, version string) string {
+	paths := []string{PackageURL, name, version, "json"}
 	return path.Join(paths...)
 }
 
-func BuildPackageReleaseUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version}
+func BuildPackageReleaseURL(name string, version string) string {
+	paths := []string{PackageURL, name, version}
 	return path.Join(paths...)
 }
 
@@ -154,7 +154,7 @@ func BuildDistInfoPath(location string, name string, version string) string {
 		if exists {
 			return distInfoPath
 		}
-		distInfoPath, exists = checkIfDistInfoPathExists(location, strings.ReplaceAll(name, "-", "_"), version)
+		distInfoPath, _ = checkIfDistInfoPathExists(location, strings.ReplaceAll(name, "-", "_"), version)
 	} else {
 		distInfoPath = location
 	}
@@ -164,16 +164,16 @@ func BuildDistInfoPath(location string, name string, version string) string {
 func checkIfDistInfoPathExists(location string, name string, version string) (string, bool) {
 	var distInfoPath string
 
-	package_name := name + "-" + version
-	package_metadata := package_name + PackageDistInfoPath
-	paths := []string{location, package_metadata}
+	packageName := name + "-" + version
+	packageMetadata := packageName + PackageDistInfoPath
+	paths := []string{location, packageMetadata}
 
 	distInfoPath = path.Join(paths...)
 
 	return distInfoPath, helper.Exists(distInfoPath)
 }
 
-func BuildLicenseUrl(distInfoLocation string) string {
+func BuildLicenseURL(distInfoLocation string) string {
 	paths := []string{distInfoLocation, PackageLicenseFile}
 	return path.Join(paths...)
 }

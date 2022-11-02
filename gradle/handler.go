@@ -13,14 +13,14 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type gradle struct {
+type Gradle struct {
 	metadata plugin.Metadata
 	ge       gradleExec
 	basepath string
 }
 
-func New() *gradle {
-	return &gradle{
+func New() *Gradle {
+	return &Gradle{
 		metadata: plugin.Metadata{
 			Name:       "Java Gradle",
 			Slug:       "Java-Gradle",
@@ -30,17 +30,17 @@ func New() *gradle {
 	}
 }
 
-func (m *gradle) GetMetadata() plugin.Metadata {
+func (m *Gradle) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
-func (m *gradle) SetRootModule(path string) error {
+func (m *Gradle) SetRootModule(path string) error {
 	m.basepath = path
 	m.ge = newGradleExec(path)
 	return nil
 }
 
-func (m *gradle) IsValid(path string) bool {
+func (m *Gradle) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -49,7 +49,7 @@ func (m *gradle) IsValid(path string) bool {
 	return false
 }
 
-func (m *gradle) GetVersion() (string, error) {
+func (m *Gradle) GetVersion() (string, error) {
 	cmd := m.ge.run("--version")
 	out, err := cmd.Output()
 	if err != nil {
@@ -58,19 +58,19 @@ func (m *gradle) GetVersion() (string, error) {
 	return string(out), nil
 }
 
-func (m *gradle) GetRootModule(path string) (*meta.Package, error) {
+func (m *Gradle) GetRootModule(path string) (*meta.Package, error) {
 	// this doesn't actually do anything and is not called by any
 	// orchestrator, should it still be in the interface?
 	return nil, fmt.Errorf("GetRootModule not implemented for java-gradle")
 }
 
-func (m *gradle) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Gradle) ListUsedModules(path string) ([]meta.Package, error) {
 	// this doesn't actually do anything and is not called by any
 	// orchestrator, should it still be in the interface?
 	return nil, fmt.Errorf("ListUsedModules not implemented for java-gradle")
 }
 
-func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	pi, err := getProjectInfo(path)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]m
 		Packages: make(map[string]*meta.Package),
 	}
 	// mediocre effort to read git info
-	origin, sha1, err := getGitInfo(path)
+	origin, sha1, err := getGitInfo()
 	if err != nil {
 		rootModule.Checksum = meta.Checksum{
 			Algorithm: meta.HashAlgorithm("None"),
@@ -134,12 +134,12 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 
 	// add all root dependencies to the project module
 	for _, rootDep := range deps.root {
-		if mod, ok := modsMap[rootDep]; !ok {
-			return nil, fmt.Errorf("Could not find module for %q", rootDep)
-		} else {
-			// apparently the key is just thrown away, so this just has to be something unique
-			project.Packages[rootDep] = mod
+		mod, ok := modsMap[rootDep]
+		if !ok {
+			return nil, fmt.Errorf("could not find module for %q", rootDep)
 		}
+		// apparently the key is just thrown away, so this just has to be something unique
+		project.Packages[rootDep] = mod
 	}
 
 	// add transitive dependencies
@@ -163,7 +163,7 @@ func getDependencyModules(project meta.Package, path string) ([]meta.Package, er
 // generate gradle dependency module (non-root)
 func generateModule(name, depURL string) (meta.Package, error) {
 	mod := meta.Package{}
-	groupId, artifactId, version, err := splitDep(name)
+	groupID, artifactID, version, err := splitDep(name)
 	if err != nil {
 		return mod, err
 	}
@@ -173,9 +173,9 @@ func generateModule(name, depURL string) (meta.Package, error) {
 	}
 	mod.Supplier = meta.Supplier{
 		Type: "Group Id",
-		Name: groupId,
+		Name: groupID,
 	}
-	mod.Name = artifactId
+	mod.Name = artifactID
 	mod.Version = version
 	mod.PackageDownloadLocation = depURL
 	mod.Checksum = meta.Checksum{
@@ -188,7 +188,7 @@ func generateModule(name, depURL string) (meta.Package, error) {
 	return mod, nil
 }
 
-func (m *gradle) HasModulesInstalled(path string) error {
+func (m *Gradle) HasModulesInstalled(path string) error {
 	// check if root has gradlew wrapper script
 	if hasGradlew(path) {
 		return nil
