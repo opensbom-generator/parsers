@@ -18,7 +18,7 @@ import (
 
 const copyrightLookup = "copyright"
 
-// copyright matching level of prefernece
+// copyright matching level of preference
 const (
 	matchLevel1 = iota
 	matchLevel2
@@ -68,7 +68,7 @@ func GetLicenses(modulePath string) (*license.License, error) {
 		licenses := licensedb.Analyse(modulePath)
 		for i := range licenses {
 			for j := range licenses[i].Matches {
-				//returns the first element, the best match
+				// returns the first element, the best match
 				return &license.License{ID: licenses[i].Matches[j].License,
 					Name:          licenses[i].Matches[j].License,
 					ExtractedText: extractLicenseContent(modulePath, licenses[i].Matches[j].File),
@@ -89,9 +89,9 @@ func LicenseSPDXExists(licenseID string) bool {
 }
 
 // BuildModuleName ...
-func BuildModuleName(path, replacePath, DirReplace string) string {
+func BuildModuleName(path, replacePath, dirReplace string) string {
 	if replacePath != "" {
-		if !Exists(DirReplace) {
+		if !Exists(dirReplace) {
 			return replacePath
 		}
 	}
