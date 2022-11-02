@@ -19,7 +19,7 @@ import (
 
 const vendorFolder = "vendor"
 
-var errFailedtoReadMod = errors.New("Failed to read go.mod line")
+var errFailedtoReadMod = errors.New("failed to read go.mod line")
 
 // Decoder
 type Decoder struct {
@@ -89,7 +89,7 @@ func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]meta.Packag
 	for {
 		var j JSONOutput
 		if err := decoder.Decode(&j); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -124,7 +124,7 @@ func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]meta.Packag
 // ConvertJSONReaderToSingleModule ...
 func (d *Decoder) ConvertJSONReaderToSingleModule(module *meta.Package) error {
 	err := json.NewDecoder(d.reader).Decode(module)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		return nil
 	}
 
@@ -133,6 +133,9 @@ func (d *Decoder) ConvertJSONReaderToSingleModule(module *meta.Package) error {
 
 func buildModule(m *Module) (*meta.Package, error) {
 	localDir := buildLocalPath(m.Path, m.Dir)
+	if localDir == "" {
+		return nil, errors.New("unable to build local path")
+	}
 	contentCheckSum := helper.BuildManifestContent(localDir)
 	module := meta.Package{
 		Name:                    helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),

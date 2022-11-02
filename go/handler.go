@@ -12,8 +12,8 @@ import (
 )
 
 // New ...
-func New() *mod {
-	return &mod{
+func New() *GoMod {
+	return &GoMod{
 		metadata: plugin.Metadata{
 			Name:     "Go Modules",
 			Slug:     "go-mod",
@@ -23,12 +23,12 @@ func New() *mod {
 }
 
 // GetMetadata ...
-func (m *mod) GetMetadata() plugin.Metadata {
+func (m *GoMod) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // SetRootModule ...
-func (m *mod) SetRootModule(path string) error {
+func (m *GoMod) SetRootModule(path string) error {
 	module, err := m.getModule(path)
 	if err != nil {
 		return err
@@ -40,7 +40,7 @@ func (m *mod) SetRootModule(path string) error {
 }
 
 // IsValid ...
-func (m *mod) IsValid(path string) bool {
+func (m *GoMod) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -50,13 +50,14 @@ func (m *mod) IsValid(path string) bool {
 }
 
 // HasModulesInstalled ...
-func (m *mod) HasModulesInstalled(path string) error {
-	// we dont need to validate if packages are installed as process to read depedencies will download them
+func (m *GoMod) HasModulesInstalled(path string) error {
+	// we dont need to validate if packages are installed as process to
+	// read dependencies will download them
 	return nil
 }
 
 // GetVersion...
-func (m *mod) GetVersion() (string, error) {
+func (m *GoMod) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, "."); err != nil {
 		return "", err
 	}
@@ -65,7 +66,7 @@ func (m *mod) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *mod) GetRootModule(path string) (*meta.Package, error) {
+func (m *GoMod) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module, err := m.getModule(path)
 		if err != nil {
@@ -79,7 +80,7 @@ func (m *mod) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // ListUsedModules...
-func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *GoMod) ListUsedModules(path string) ([]meta.Package, error) {
 	if err := m.buildCmd(ModulesCmd, path); err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *GoMod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -127,7 +128,7 @@ func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 	return modules, nil
 }
 
-func (m *mod) getModule(path string) (meta.Package, error) {
+func (m *GoMod) getModule(path string) (meta.Package, error) {
 	if err := m.buildCmd(RootModuleCmd, path); err != nil {
 		return meta.Package{}, err
 	}
@@ -150,7 +151,7 @@ func (m *mod) getModule(path string) (meta.Package, error) {
 	return module, nil
 }
 
-func (m *mod) buildCmd(cmd command, path string) error {
+func (m *GoMod) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != "go" {
 		return errNoGoCommand

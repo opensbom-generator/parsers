@@ -8,7 +8,7 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type mod struct {
+type GoMod struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
@@ -24,7 +24,7 @@ type JSONOutput struct {
 type Module struct {
 	Version   string     `json:"Version,omitempty"`
 	Path      string     `json:"Path,omitempty"`
-	Dir       string     `json:"Dir,noempty"`
+	Dir       string     `json:"Dir,omitempty"`
 	Replace   modReplace `json:"Replace,omitempty"`
 	GoMod     string     `json:"GoMod,omitempty"`
 	GoVersion string     `json:"GoVersion,omitempty"`
@@ -32,7 +32,7 @@ type Module struct {
 
 type modReplace struct {
 	Path      string `json:"Path,omitempty"`
-	Dir       string `json:"Dir,noempty"`
+	Dir       string `json:"Dir,omitempty"`
 	GoMod     string `json:"GoMod,omitempty"`
 	GoVersion string `json:"GoVersion,omitempty"`
 }
