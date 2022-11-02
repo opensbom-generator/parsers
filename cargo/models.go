@@ -2,28 +2,28 @@
 
 package cargo
 
-type CargoMetadata struct {
-	WorkspaceRoot   string         `json:"workspace_root"`
-	Version         int64          `json:"version"`
-	TargetDirectory string         `json:"target_directory"`
-	Packages        []CargoPackage `json:"packages"`
+type Metadata struct {
+	WorkspaceRoot   string       `json:"workspace_root"`
+	Version         int64        `json:"version"`
+	TargetDirectory string       `json:"target_directory"`
+	Packages        []SubPackage `json:"packages"`
 }
 
-type CargoPackage struct {
-	Name         string                   `json:"name"`
-	Version      string                   `json:"version"`
-	ID           string                   `json:"id"`
-	Description  string                   `json:"description"`
-	Source       string                   `json:"source"`
-	Dependencies []CargoPackageDependency `json:"dependencies"`
-	ManifestPath string                   `json:"manifest_path"`
-	Authors      []string                 `json:"authors"`
-	Repository   string                   `json:"repository"`
-	Homepage     string                   `json:"homepage"`
-	License      string                   `json:"license"`
+type SubPackage struct {
+	Name         string              `json:"name"`
+	Version      string              `json:"version"`
+	ID           string              `json:"id"`
+	Description  string              `json:"description"`
+	Source       string              `json:"source"`
+	Dependencies []PackageDependency `json:"dependencies"`
+	ManifestPath string              `json:"manifest_path"`
+	Authors      []string            `json:"authors"`
+	Repository   string              `json:"repository"`
+	Homepage     string              `json:"homepage"`
+	License      string              `json:"license"`
 }
 
-type CargoPackageDependency struct {
+type PackageDependency struct {
 	Name                string        `json:"name"`
 	Source              string        `json:"source"`
 	Req                 string        `json:"req"`

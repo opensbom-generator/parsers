@@ -15,8 +15,8 @@ var (
 	VersionCmd        command = "cargo --version"
 	ModulesCmd        command = "cargo metadata --format-version=1"
 	RootModuleNameCmd command = "cargo pkgid"
-	CargoTomlFile     string  = "Cargo.toml"
-	CargoLockFile     string  = "Cargo.lock"
+	CargoTomlFile             = "Cargo.toml"
+	CargoLockFile             = "Cargo.lock"
 )
 
 // Parse ...
@@ -25,7 +25,7 @@ func (c command) Parse() []string {
 	return strings.Fields(cmd)
 }
 
-func (m *mod) buildCmd(cmd command, path string) error {
+func (m *Package) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != "cargo" {
 		return errNoCargoCommand
@@ -42,7 +42,7 @@ func (m *mod) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-func (m *mod) runTask(task command, path string) (*bytes.Buffer, error) {
+func (m *Package) runTask(task command, path string) (*bytes.Buffer, error) {
 
 	err := m.buildCmd(task, path)
 	if err != nil {

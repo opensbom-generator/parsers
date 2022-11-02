@@ -10,15 +10,15 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type mod struct {
+type Package struct {
 	metadata      plugin.Metadata
 	rootModule    *meta.Package
 	command       *helper.Cmd
-	cargoMetadata CargoMetadata
+	cargoMetadata Metadata
 }
 
-func New() *mod {
-	return &mod{
+func New() *Package {
+	return &Package{
 		metadata: plugin.Metadata{
 			Name:       "Cargo Modules",
 			Slug:       "cargo",
@@ -27,11 +27,11 @@ func New() *mod {
 		},
 	}
 }
-func (m *mod) GetMetadata() plugin.Metadata {
+func (m *Package) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
-func (m *mod) SetRootModule(path string) error {
+func (m *Package) SetRootModule(path string) error {
 	module, err := m.getRootModule(path)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func (m *mod) SetRootModule(path string) error {
 	return nil
 }
 
-func (m *mod) GetVersion() (string, error) {
+func (m *Package) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, "."); err != nil {
 		return "", err
 	}
@@ -49,7 +49,7 @@ func (m *mod) GetVersion() (string, error) {
 	return m.command.Output()
 }
 
-func (m *mod) GetRootModule(path string) (*meta.Package, error) {
+func (m *Package) GetRootModule(path string) (*meta.Package, error) {
 	if err := m.SetRootModule(path); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (m *mod) GetRootModule(path string) (*meta.Package, error) {
 	return m.rootModule, nil
 }
 
-func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Package) ListUsedModules(path string) ([]meta.Package, error) {
 	var collection []meta.Package
 
 	rootModule, err := m.GetRootModule(path)
@@ -70,17 +70,13 @@ func (m *mod) ListUsedModules(path string) ([]meta.Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	modules, err := convertMetadataToModulesList(meta.Packages)
-	if err != nil {
-		return nil, err
-	}
-
+	modules := convertMetadataToModulesList(meta.Packages)
 	collection = append(collection, modules...)
 
 	return collection, nil
 }
 
-func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Package) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -91,15 +87,12 @@ func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 		return nil, err
 	}
 
-	err = addDepthModules(modules, meta.Packages)
-	if err != nil {
-		return nil, err
-	}
+	addDepthModules(modules, meta.Packages)
 
 	return modules, nil
 }
 
-func (m *mod) IsValid(path string) bool {
+func (m *Package) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -108,7 +101,7 @@ func (m *mod) IsValid(path string) bool {
 	return false
 }
 
-func (m *mod) HasModulesInstalled(path string) error {
+func (m *Package) HasModulesInstalled(path string) error {
 	if helper.Exists(filepath.Join(path, CargoLockFile)) {
 		return nil
 	}

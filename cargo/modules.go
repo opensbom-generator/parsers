@@ -11,7 +11,9 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 )
 
-func addDepthModules(modules []meta.Package, cargoPackages []CargoPackage) error {
+// This function does not return anything, but doesnt take any
+// pointers either.
+func addDepthModules(modules []meta.Package, cargoPackages []SubPackage) {
 	moduleMap := map[string]meta.Package{}
 	moduleIndex := map[string]int{}
 	for idx, module := range modules {
@@ -20,7 +22,6 @@ func addDepthModules(modules []meta.Package, cargoPackages []CargoPackage) error
 	}
 
 	for _, cargoPackage := range cargoPackages {
-
 		rootLevelName := cargoPackage.Name
 		if rootLevelName == "" {
 			continue
@@ -66,13 +67,10 @@ func addDepthModules(modules []meta.Package, cargoPackages []CargoPackage) error
 			}
 		}
 	}
-
-	return nil
 }
 
-func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]meta.Package, error) {
-	var collection []meta.Package
-
+func convertMetadataToModulesList(cargoPackages []SubPackage) []meta.Package {
+	collection := []meta.Package{}
 	for _, dep := range cargoPackages {
 		module := convertCargoPackageToModule(dep)
 		if module.Name == "" || module.PackageDownloadLocation == "" {
@@ -82,10 +80,10 @@ func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]meta.Package,
 		collection = append(collection, module)
 	}
 
-	return collection, nil
+	return collection
 }
 
-func convertCargoPackageToModule(dep CargoPackage) meta.Package {
+func convertCargoPackageToModule(dep SubPackage) meta.Package {
 	localPath := convertToLocalPath(dep.ManifestPath)
 	supplier := getPackageSupplier(dep.Authors, dep.Name)
 	donwloadURL := getPackageDownloadLocation(dep)
@@ -120,7 +118,7 @@ func convertCargoPackageToModule(dep CargoPackage) meta.Package {
 	return module
 }
 
-func getPackageDownloadLocation(dep CargoPackage) string {
+func getPackageDownloadLocation(dep SubPackage) string {
 	if dep.Repository != "" {
 		return dep.Repository
 	}
@@ -172,7 +170,7 @@ func getPackageSupplier(authors []string, defaultValue string) meta.Supplier {
 	return supplier
 }
 
-func (m *mod) getRootModule(path string) (meta.Package, error) {
+func (m *Package) getRootModule(path string) (meta.Package, error) {
 	name, err := m.getRootProjectName(path)
 	if err != nil {
 		return meta.Package{}, err
@@ -189,8 +187,7 @@ func (m *mod) getRootModule(path string) (meta.Package, error) {
 	return mod, nil
 }
 
-func convertCargoPackageToRootModule(dep CargoPackage) meta.Package {
-
+func convertCargoPackageToRootModule(dep SubPackage) meta.Package {
 	localPath := convertToLocalPath(dep.ManifestPath)
 
 	module := meta.Package{
@@ -225,7 +222,7 @@ func convertToLocalPath(manifestPath string) string {
 	return localPath
 }
 
-func getDefaultPackageURL(dep CargoPackage) string {
+func getDefaultPackageURL(dep SubPackage) string {
 	if dep.Homepage != "" {
 		return dep.Homepage
 	}
@@ -237,7 +234,7 @@ func getDefaultPackageURL(dep CargoPackage) string {
 	return dep.Repository
 }
 
-func formatPackageURL(dep CargoPackage) string {
+func formatPackageURL(dep SubPackage) string {
 	URL := getDefaultPackageURL(dep)
 	URL = removeURLProtocol(URL)
 	URL = removeRegisrySuffix(URL)
@@ -245,8 +242,7 @@ func formatPackageURL(dep CargoPackage) string {
 	return URL
 }
 
-func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {
-
+func (m *Package) getCargoMetadata(path string) (Metadata, error) {
 	if m.cargoMetadata.WorkspaceRoot != "" {
 		return m.cargoMetadata, nil
 	}
@@ -254,16 +250,16 @@ func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {
 	buff, _ := m.runTask(ModulesCmd, path)
 	defer buff.Reset()
 
-	var cargoMetadata CargoMetadata
+	var cargoMetadata Metadata
 	if err := json.NewDecoder(buff).Decode(&cargoMetadata); err != nil {
-		return CargoMetadata{}, err
+		return Metadata{}, err
 	}
 	m.cargoMetadata = cargoMetadata
 
 	return m.cargoMetadata, nil
 }
 
-func (m *mod) getRootProjectName(path string) (string, error) {
+func (m *Package) getRootProjectName(path string) (string, error) {
 	err := m.buildCmd(RootModuleNameCmd, path)
 	if err != nil {
 		return "", err
@@ -283,13 +279,12 @@ func (m *mod) getRootProjectName(path string) (string, error) {
 	return name, nil
 }
 
-func findPackageByName(packages []CargoPackage, name string) (CargoPackage, bool) {
-
+func findPackageByName(packages []SubPackage, name string) (SubPackage, bool) {
 	for _, mod := range packages {
 		if mod.Name == name {
 			return mod, true
 		}
 	}
 
-	return CargoPackage{}, false
+	return SubPackage{}, false
 }

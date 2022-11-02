@@ -3,7 +3,7 @@
 package cargo
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"encoding/hex"
 	"strings"
 )
@@ -12,7 +12,7 @@ func readCheckSum(content string) string {
 	if content == "" {
 		return ""
 	}
-	h := sha1.New()
+	h := sha1.New() // nolint:gosec
 	h.Write([]byte(content))
 	return hex.EncodeToString(h.Sum(nil))
 }
