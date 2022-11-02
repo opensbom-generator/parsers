@@ -5,7 +5,8 @@ package worker
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
@@ -81,10 +82,13 @@ var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
 	meta.HashAlgoMD2,
 }
 
-func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
-	url := "https://" + packageJsonUrl
+func makeGetRequest(jsonPackageURL string) (*http.Response, error) {
+	url := "https://" + jsonPackageURL
 
-	request, _ := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating http request: %w", err)
+	}
 	request.Header.Set("Accept", "application/json")
 
 	client := &http.Client{}
@@ -100,16 +104,16 @@ func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
 	return response, err
 }
 
-func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
+func GetPackageDataFromPyPi(jsonPackageURL string) (PypiPackageData, error) {
 	packageInfo := PypiPackageData{}
 
-	response, err := makeGetRequest(packageJsonUrl)
+	response, err := makeGetRequest(jsonPackageURL)
 	if err != nil {
 		return packageInfo, err
 	}
 	defer response.Body.Close()
 
-	jsondata, _ := ioutil.ReadAll(response.Body)
+	jsondata, _ := io.ReadAll(response.Body)
 
 	err = json.Unmarshal(jsondata, &packageInfo)
 	if err != nil {

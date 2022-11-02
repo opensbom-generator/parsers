@@ -72,16 +72,16 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 }
 
 func getAddionalMataDataInfo(metadata *Metadata) {
-	metadata.ProjectURL = BuildProjectUrl(metadata.Name)
-	metadata.PackageURL = BuildPackageUrl(metadata.Name)
-	metadata.PackageReleaseURL = BuildPackageReleaseUrl(metadata.Name, metadata.Version)
-	metadata.PackageJsonURL = BuildPackageJsonUrl(metadata.Name, metadata.Version)
+	metadata.ProjectURL = buildProjectURL(metadata.Name)
+	metadata.PackageURL = buildPackageURL(metadata.Name)
+	metadata.PackageReleaseURL = buildPackageReleaseURL(metadata.Name, metadata.Version)
+	metadata.JSONPackageURL = buildJSONPackageURL(metadata.Name, metadata.Version)
 
-	metadata.DistInfoPath = BuildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
-	metadata.LocalPath = BuildLocalPath(metadata.Location, metadata.Name)
-	metadata.LicensePath = BuildLicenseUrl(metadata.DistInfoPath)
-	metadata.MetadataPath = BuildMetadataPath(metadata.DistInfoPath)
-	metadata.WheelPath = BuildWheelPath(metadata.DistInfoPath)
+	metadata.DistInfoPath = buildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
+	metadata.LocalPath = buildLocalPath(metadata.Location, metadata.Name)
+	metadata.LicensePath = buildLicenseURL(metadata.DistInfoPath)
+	metadata.MetadataPath = buildMetadataPath(metadata.DistInfoPath)
+	metadata.WheelPath = buildWheelPath(metadata.DistInfoPath)
 }
 
 func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, []Metadata, error) {
@@ -102,8 +102,8 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 		return nil, nil, errorUnableToFetchPackageMetadata
 	}
 
-	// Metadata of all packages are separated by "---". Split all such occurances and trim to remove leading \n
-
+	// Metadata of all packages are separated by "---". Split all
+	// such occurrences and trim to remove leading \n
 	a := regexp.MustCompile(pkgMetedataSeparator)
 	eachpkgsmetadatastr := a.Split(allpkgsmetadatastr, -1)
 	for i := range eachpkgsmetadatastr {
@@ -146,7 +146,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 		module.PackageURL = metadata.HomePage
 	}
 
-	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJsonURL)
+	pypiData, err := GetPackageDataFromPyPi(metadata.JSONPackageURL)
 	if err != nil {
 		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
 		if (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
@@ -175,14 +175,10 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 	module.Checksum = *checksum
 
 	// Prepare download location
-	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
-	module.PackageDownloadLocation = downloadUrl
-	if len(downloadUrl) == 0 {
-		if metadata.Root {
-			module.PackageDownloadLocation = metadata.HomePage
-		} else {
-			module.PackageDownloadLocation = metadata.HomePage
-		}
+	downloadURL := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
+	module.PackageDownloadLocation = downloadURL
+	if len(downloadURL) == 0 {
+		module.PackageDownloadLocation = metadata.HomePage
 	}
 
 	// Prepare licenses

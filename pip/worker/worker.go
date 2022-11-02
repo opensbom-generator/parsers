@@ -3,6 +3,7 @@
 package worker
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,12 +23,12 @@ const ModuleVenv = "venv"
 const PyvenvCfg = "pyvenv.cfg"
 const VirtualEnv = "VIRTUAL_ENV"
 
-var errorWheelFileNotFound = fmt.Errorf("Wheel file not found")
-var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open wheel file")
-var errorUnableToFetchPackageMetadata = fmt.Errorf("Unable to fetch package details")
+var errorWheelFileNotFound = fmt.Errorf("wheel file not found")
+var errorUnableToOpenWheelFile = fmt.Errorf("unable to open wheel file")
+var errorUnableToFetchPackageMetadata = fmt.Errorf("unable to fetch package details")
 
 func IsRequirementMeet(data string) bool {
-	_modules := LoadModules(data, "")
+	_modules, _ := LoadModules(data, "")
 	return len(_modules) > 3
 }
 
@@ -93,15 +94,14 @@ func SearchVenv(path string) (bool, string, string) {
 	}
 
 	err := filepath.Walk(path, ScanPyvenvCfg(&venv, &venvfullpath))
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		err = nil
 	}
 
-	if err == nil {
-		return true, venv, venvfullpath
+	if err != nil {
+		return false, venv, venvfullpath
 	}
-
-	return false, venv, venvfullpath
+	return true, venv, venvfullpath
 }
 
 func IsValidRootModule(path string) bool {
@@ -114,7 +114,7 @@ func IsValidRootModule(path string) bool {
 	return false
 }
 
-func IsRootModule(pkg Packages, pip_type string) bool {
+func IsRootModule(pkg Packages, pipType string) bool {
 	osWin := "windows"
 	osDarwin := "darwin"
 	osLinux := "linux"
@@ -122,15 +122,16 @@ func IsRootModule(pkg Packages, pip_type string) bool {
 	poetry := "poetry"
 	pyenv := "pyenv"
 	os := runtime.GOOS
-	if os == osWin && (pip_type == pipenv || pip_type == pyenv) {
+	switch {
+	case os == osWin && (pipType == pipenv || pipType == pyenv):
 		if !strings.Contains(pkg.Location, "\\src\\") && !strings.Contains(pkg.Location, "\\site-packages") {
 			return true
 		}
-	} else if (os == osDarwin || os == osLinux) && (pip_type == pipenv || pip_type == pyenv) {
+	case (os == osDarwin || os == osLinux) && (pipType == pipenv || pipType == pyenv):
 		if !strings.Contains(pkg.Location, "/src/") && !strings.Contains(pkg.Location, "/site-packages") {
 			return true
 		}
-	} else if (os == osWin || os == osLinux || os == osDarwin) && pip_type == poetry {
+	case (os == osWin || os == osLinux || os == osDarwin) && pipType == poetry:
 		if pkg.Installer == poetry {
 			return true
 		}

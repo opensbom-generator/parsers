@@ -5,6 +5,7 @@ package worker
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -12,8 +13,8 @@ import (
 	"github.com/opensbom-generator/parsers/internal/helper"
 )
 
-const ProjectUrl = "pypi.org/project"
-const PackageUrl = "pypi.org/pypi"
+const ProjectURL = "pypi.org/project"
+const PackageURL = "pypi.org/pypi"
 const SitePackage = "site-packages"
 const PackageDistInfoPath = ".dist-info"
 const PackageLicenseFile = "LICENSE"
@@ -54,7 +55,7 @@ type Metadata struct {
 	Description       string
 	ProjectURL        string
 	PackageURL        string
-	PackageJsonURL    string
+	JSONPackageURL    string
 	PackageReleaseURL string
 	HomePage          string
 	Author            string
@@ -105,42 +106,44 @@ func GetShortPythonVersion(version string) string {
 	return pythonVersion
 }
 
-func LoadModules(data string, version string) []Packages {
+func LoadModules(data string, version string) ([]Packages, error) {
 	var _modules []Packages
-	json.Unmarshal([]byte(data), &_modules)
+	if err := json.Unmarshal([]byte(data), &_modules); err != nil {
+		return nil, fmt.Errorf("unmarshaling module data: %w", err)
+	}
 	for i, mod := range _modules {
 		mod.CPVersion = version
 		_modules[i] = mod
 	}
-	return _modules
+	return _modules, nil
 }
 
-func BuildProjectUrl(name string) string {
-	paths := []string{ProjectUrl, name}
+func buildProjectURL(name string) string {
+	paths := []string{ProjectURL, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageUrl(name string) string {
-	paths := []string{PackageUrl, name}
+func buildPackageURL(name string) string {
+	paths := []string{PackageURL, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageJsonUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version, "json"}
+func buildJSONPackageURL(name string, version string) string {
+	paths := []string{PackageURL, name, version, "json"}
 	return path.Join(paths...)
 }
 
-func BuildPackageReleaseUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version}
+func buildPackageReleaseURL(name string, version string) string {
+	paths := []string{PackageURL, name, version}
 	return path.Join(paths...)
 }
 
-func BuildLocalPath(location string, name string) string {
+func buildLocalPath(location string, name string) string {
 	paths := []string{location, name}
 	return path.Join(paths...)
 }
 
-func BuildDistInfoPath(location string, name string, version string) string {
+func buildDistInfoPath(location string, name string, version string) string {
 	var distInfoPath string
 	var exists bool
 	var isSitePackage bool
@@ -154,7 +157,7 @@ func BuildDistInfoPath(location string, name string, version string) string {
 		if exists {
 			return distInfoPath
 		}
-		distInfoPath, exists = checkIfDistInfoPathExists(location, strings.ReplaceAll(name, "-", "_"), version)
+		distInfoPath, _ = checkIfDistInfoPathExists(location, strings.ReplaceAll(name, "-", "_"), version)
 	} else {
 		distInfoPath = location
 	}
@@ -164,26 +167,26 @@ func BuildDistInfoPath(location string, name string, version string) string {
 func checkIfDistInfoPathExists(location string, name string, version string) (string, bool) {
 	var distInfoPath string
 
-	package_name := name + "-" + version
-	package_metadata := package_name + PackageDistInfoPath
-	paths := []string{location, package_metadata}
+	packageName := name + "-" + version
+	packageMetadata := packageName + PackageDistInfoPath
+	paths := []string{location, packageMetadata}
 
 	distInfoPath = path.Join(paths...)
 
 	return distInfoPath, helper.Exists(distInfoPath)
 }
 
-func BuildLicenseUrl(distInfoLocation string) string {
+func buildLicenseURL(distInfoLocation string) string {
 	paths := []string{distInfoLocation, PackageLicenseFile}
 	return path.Join(paths...)
 }
 
-func BuildMetadataPath(distInfoLocation string) string {
+func buildMetadataPath(distInfoLocation string) string {
 	paths := []string{distInfoLocation, PackageMetadataFie}
 	return path.Join(paths...)
 }
 
-func BuildWheelPath(distInfoLocation string) string {
+func buildWheelPath(distInfoLocation string) string {
 	paths := []string{distInfoLocation, PackageWheelFie}
 	return path.Join(paths...)
 }

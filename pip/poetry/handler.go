@@ -4,6 +4,7 @@ package poetry
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -194,7 +195,10 @@ func (m *Poetry) LoadModuleList(path string) error {
 	}
 	result, err := m.command.Output()
 	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
-		m.pkgs = worker.LoadModules(result, m.version)
+		m.pkgs, err = worker.LoadModules(result, m.version)
+		if err != nil {
+			return fmt.Errorf("loading modules: %w", err)
+		}
 		m.markRootModue()
 	}
 	return err
