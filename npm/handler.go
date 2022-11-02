@@ -94,7 +94,7 @@ func (m *NPM) SetRootModule(path string) error {
 // GetRootModule return root package information ex. Name, Version
 func (m *NPM) GetRootModule(path string) (*meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (m *NPM) GetRootModule(path string) (*meta.Package, error) {
 // ListUsedModules return brief info of installed modules, Name and Version
 func (m *NPM) ListUsedModules(path string) ([]meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return []meta.Package{}, err
 	}
@@ -173,7 +173,7 @@ func (m *NPM) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 	}
 
 	r := reader.New(filepath.Join(path, pk))
-	pkResults, err := r.ReadJson()
+	pkResults, err := r.ReadJSON()
 	if err != nil {
 		return []meta.Package{}, err
 	}
@@ -331,7 +331,7 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 
 func getPackageHomepage(path string) string {
 	r := reader.New(path)
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return ""
 	}

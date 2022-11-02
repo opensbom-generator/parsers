@@ -3,7 +3,7 @@
 package meta
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
@@ -101,7 +101,7 @@ func (c *Checksum) Compute(content []byte) string {
 	case HashAlgoSHA512:
 		h = sha512.New()
 	default:
-		h = sha1.New()
+		h = sha1.New() // nolint:gosec
 	}
 	h.Write(content)
 	return hex.EncodeToString(h.Sum(nil))

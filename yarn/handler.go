@@ -97,7 +97,7 @@ func (m *Yarn) SetRootModule(path string) error {
 // root package information ex. Name, Version
 func (m *Yarn) GetRootModule(path string) (*meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return &meta.Package{}, err
 	}
@@ -146,7 +146,7 @@ func (m *Yarn) GetRootModule(path string) (*meta.Package, error) {
 // ListUsedModules return brief info of installed modules, Name and Version
 func (m *Yarn) ListUsedModules(path string) ([]meta.Package, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return []meta.Package{}, err
 	}
@@ -358,7 +358,7 @@ func getCopyright(path string) string {
 
 func getPackageHomepage(path string) string {
 	r := reader.New(path)
-	pkResult, err := r.ReadJson()
+	pkResult, err := r.ReadJSON()
 	if err != nil {
 		return ""
 	}

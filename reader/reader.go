@@ -4,7 +4,7 @@ package reader
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 // Reader ...
@@ -28,8 +28,8 @@ func (s *Reader) StringFromFile() string {
 
 }
 
-// ReadJson ...
-func (s *Reader) ReadJson() (map[string]interface{}, error) {
+// ReadJSON ...
+func (s *Reader) ReadJSON() (map[string]interface{}, error) {
 	fByte, err := s.readFile()
 	if err != nil {
 		return nil, err
@@ -44,5 +44,5 @@ func (s *Reader) ReadJson() (map[string]interface{}, error) {
 }
 
 func (s *Reader) readFile() ([]byte, error) {
-	return ioutil.ReadFile(s.fileName)
+	return os.ReadFile(s.fileName)
 }
