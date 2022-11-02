@@ -3,7 +3,7 @@
 linters:
   enable:
   - asciicheck
-  - unused
+  # - unused
   - depguard
   - errcheck
   - errorlint
@@ -16,11 +16,13 @@ linters:
   - prealloc
   - revive
   - misspell
-  - stylecheck
+  # - stylecheck
   - tparallel
   - unconvert
   - unparam
-  - whitespace
+  # - whitespace
+  disable:
+  - unused
 output:
   uniq-by-line: false
 issues:
