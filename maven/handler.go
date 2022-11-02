@@ -3,7 +3,7 @@
 package javamaven
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -15,15 +15,15 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type javamaven struct {
+type Maven struct {
 	metadata   plugin.Metadata
 	rootModule *meta.Package
 	command    *helper.Cmd
 }
 
 // New ...
-func New() *javamaven {
-	return &javamaven{
+func New() *Maven {
+	return &Maven{
 		metadata: plugin.Metadata{
 			Name:     "Java Maven",
 			Slug:     "Java-Maven",
@@ -36,12 +36,12 @@ func New() *javamaven {
 }
 
 // GetMetadata ...
-func (m *javamaven) GetMetadata() plugin.Metadata {
+func (m *Maven) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // SetRootModule ...
-func (m *javamaven) SetRootModule(path string) error {
+func (m *Maven) SetRootModule(path string) error {
 	module, err := m.getModule(path)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (m *javamaven) SetRootModule(path string) error {
 }
 
 // IsValid ...
-func (m *javamaven) IsValid(path string) bool {
+func (m *Maven) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -63,7 +63,7 @@ func (m *javamaven) IsValid(path string) bool {
 }
 
 // HasModulesInstalled ...
-func (m *javamaven) HasModulesInstalled(path string) error {
+func (m *Maven) HasModulesInstalled(path string) error {
 	// TODO: How to verify is java project is build
 	// Enforcing mvn path to be set in PATH variable
 	fname, err := exec.LookPath("mvn")
@@ -82,7 +82,7 @@ func (m *javamaven) HasModulesInstalled(path string) error {
 }
 
 // GetVersion...
-func (m *javamaven) GetVersion() (string, error) {
+func (m *Maven) GetVersion() (string, error) {
 	err := m.buildCmd(VersionCmd, ".")
 	if err != nil {
 		return "", err
@@ -92,7 +92,7 @@ func (m *javamaven) GetVersion() (string, error) {
 }
 
 // GetRootModule...
-func (m *javamaven) GetRootModule(path string) (*meta.Package, error) {
+func (m *Maven) GetRootModule(path string) (*meta.Package, error) {
 	if m.rootModule == nil {
 		module, err := m.getModule(path)
 		if err != nil {
@@ -106,7 +106,7 @@ func (m *javamaven) GetRootModule(path string) (*meta.Package, error) {
 }
 
 // ListUsedModules...
-func (m *javamaven) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Maven) ListUsedModules(path string) ([]meta.Package, error) {
 	modules, err := convertPOMReaderToModules(path, true)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (m *javamaven) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Maven) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
@@ -126,8 +126,7 @@ func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) (
 
 	tdList, err := getTransitiveDependencyList(path, globalSettingFile)
 	if err != nil {
-		fmt.Println("error in getting mvn transitive dependency tree and parsing it")
-		return nil, err
+		return nil, fmt.Errorf("getting mvn transitive dependency tree: %w", err)
 	}
 
 	buildDependenciesGraph(modules, tdList)
@@ -135,7 +134,7 @@ func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) (
 	return modules, nil
 }
 
-func (m *javamaven) getModule(path string) (meta.Package, error) {
+func (m *Maven) getModule(path string) (meta.Package, error) {
 	modules, err := convertPOMReaderToModules(path, false)
 
 	if err != nil {
@@ -150,7 +149,7 @@ func (m *javamaven) getModule(path string) (meta.Package, error) {
 	return modules[0], nil
 }
 
-func (m *javamaven) buildCmd(cmd command, path string) error {
+func (m *Maven) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
 
 	command := helper.NewCmd(helper.CmdOptions{
@@ -165,7 +164,7 @@ func (m *javamaven) buildCmd(cmd command, path string) error {
 }
 
 func readCheckSum(content string) string {
-	h := sha1.New()
+	h := sha1.New() // nolint:gosec
 	h.Write([]byte(content))
 	return hex.EncodeToString(h.Sum(nil))
 }
