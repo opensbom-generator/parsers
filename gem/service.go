@@ -10,7 +10,7 @@ import (
 )
 
 type (
-	GemMetaVM struct {
+	MetaVM struct {
 		Name             string   `json:"name"`
 		Downloads        int64    `json:"downloads"`
 		Version          string   `json:"version"`
@@ -58,7 +58,7 @@ type (
 		RubyVersion     string `json:"ruby_version"`
 		Prerelease      bool   `json:"prerelease"`
 	}
-	GemService struct {
+	Service struct {
 		request  *http.Request
 		response *http.Response
 		name     string
@@ -67,18 +67,18 @@ type (
 )
 
 const (
-	DEFAULT_METHOD        = "GET"
-	DEFAULT_URL           = "https://rubygems.org/api/v1/gems"
-	DEFAULT_RESPONSE_TYPE = ".json"
+	defaultHTTPMethod   = "GET"
+	defaultURL          = "https://rubygems.org/api/v1/gems"
+	defaultResponseType = ".json"
 )
 
-func NewService(name string) (*GemService, error) {
-	url := fmt.Sprintf("%s/%s%s", DEFAULT_URL, name, DEFAULT_RESPONSE_TYPE)
-	request, err := http.NewRequest(DEFAULT_METHOD, url, nil)
+func NewService(name string) (*Service, error) {
+	url := fmt.Sprintf("%s/%s%s", defaultURL, name, defaultResponseType)
+	request, err := http.NewRequest(defaultHTTPMethod, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &GemService{
+	return &Service{
 		request:  request,
 		response: nil,
 		name:     name,
@@ -86,14 +86,13 @@ func NewService(name string) (*GemService, error) {
 	}, nil
 }
 
-func (service *GemService) GetGem() (GemMetaVM, error) {
-
-	var metadata GemMetaVM
+func (service *Service) GetGem() (MetaVM, error) {
+	var metadata MetaVM
 	service.response, service.err = http.DefaultClient.Do(service.request)
 
 	if service.err != nil {
 		log.Printf("Failed to get gem from rubygems.org : %v\n", service.err)
-		return GemMetaVM{}, service.err
+		return MetaVM{}, service.err
 	}
 	defer func() {
 		service.err = service.response.Body.Close()
@@ -105,7 +104,7 @@ func (service *GemService) GetGem() (GemMetaVM, error) {
 	service.err = json.NewDecoder(service.response.Body).Decode(&metadata)
 	if service.err != nil {
 		log.Printf("Failed to get gem from rubygems.org : %v\n", service.err)
-		return GemMetaVM{}, service.err
+		return MetaVM{}, service.err
 	}
 	return metadata, nil
 }

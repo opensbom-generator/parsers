@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,28 +55,27 @@ var (
 		"s.required_ruby_version":         true,
 		"spec.required_ruby_version":      true,
 	}
-	spec          = Spec{}
 	rootPath      *string
 	dependencyMap = make(map[string]VersionMap)
 )
 
 const (
-	TITLE                   = "specs:"
-	SPEC_DEPENDENCY_PATH    = "vendor/bundle/ruby"
-	SPEC_EXTENSION          = ".gemspec"
-	SPEC_DEFAULT_DIR        = "specifications"
-	CACHE_DEFAULT_DIR       = "cache"
-	GEM_DEFAULT_DIR         = "gems"
-	RAKEFILE_DEFAULT_NAME   = "Rakefile"
-	PLATFORMS_DEFAULT_NAME  = "PLATFORMS"
-	LEGACY_LOCK_EXTENSION   = ".lock"
-	LICENSE_DEFAULT_FILE    = "LICENSE"
-	COPYRIGHT_DEFAULT_LABEL = "Copyright (c)"
-	LOCK_EXTENSION          = ".locked"
-	GEM_DEFAULT_EXTENSION   = ".gem"
-	DETECTION_MODE_SPEC     = "spec"
-	DETECTION_MODE_LOCK     = "lock"
-	NONE                    = "NO ASSERTION"
+	Title                 = "specs:"
+	specDependencyPath    = "vendor/bundle/ruby"
+	specExtension         = ".gemspec"
+	specDefaultDir        = "specifications"
+	cacheDefaultDir       = "cache"
+	gemDefaultDir         = "gems"
+	rakeFileDefaultName   = "Rakefile"
+	platformsDefaultName  = "PLATFORMS"
+	legacyLockExtension   = ".lock"
+	licenseDefaultFile    = "LICENSE"
+	copyrightDefaultLabel = "Copyright (c)"
+	lockExtension         = ".locked"
+	gemDefaultExtension   = ".gem"
+	detectionModeSpec     = "spec"
+	detectionModeLock     = "lock"
+	noAssertion           = "NO ASSERTION"
 )
 
 type (
@@ -119,10 +117,15 @@ type (
 
 // Returns the root module
 func getGemRootModule(path string) (*meta.Package, error) {
+	paths, secPaths, err := getGemPaths()
+	if err != nil {
+		return nil, fmt.Errorf("getting gem paths: %w", err)
+	}
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		initializeDepCache(&wg)
+		initializeDepCache(&wg, paths, secPaths)
 	}()
 	wg.Wait()
 
@@ -219,7 +222,7 @@ func listGemRootModule(path string) ([]meta.Package, error) {
 					noSpecs[l2] = true
 					continue
 				}
-				//Add 2nd Layer
+				// Add 2nd Layer
 				layerTwoGems, secondLayerModule = addGemLayer(secondDescendantSpec, name, &firstLayerModule, _2ndLayerMapped, layerTwoGems)
 
 				for _, thirdDescendant := range secondDescendantSpec.RuntimeDependencies {
@@ -229,7 +232,7 @@ func listGemRootModule(path string) ([]meta.Package, error) {
 						noSpecs[l3] = true
 						continue
 					}
-					//Add 3rd Layer
+					// Add 3rd Layer
 					layerThreeGems, _ = addGemLayer(thirdDescendantSpec, name, &secondLayerModule, _3rdLayerMapped, layerThreeGems)
 				}
 
@@ -319,8 +322,7 @@ func setLicenseInfo(path string, module *meta.Package) {
 
 // Gets gem info from in-memory cache
 func getDescendantInfo(child string) (Spec, string, error) {
-
-	name, _, _ := childDepInfo(child)
+	name, _ := childDepInfo(child)
 	version := getRangedVersion(child)
 	info := lookupGemInfo(strings.TrimSpace(name), strings.TrimSpace(version))
 	if info.Name == "" {
@@ -332,19 +334,19 @@ func getDescendantInfo(child string) (Spec, string, error) {
 // Gets parent and child dependency tree from .gemspec
 func getSpecDependencies(path string) (Spec, error) {
 
-	manifest, err := detectManifest(path, DETECTION_MODE_SPEC)
+	manifest, err := detectManifest(path, detectionModeSpec)
 	if err != nil {
 		return Spec{}, err
 	}
 	module := getSpecs(filepath.Join(path, manifest))
-	BuildSpecDependencies(filepath.Join(path, SPEC_DEPENDENCY_PATH), false, &module)
+	BuildSpecDependencies(filepath.Join(path, specDependencyPath), false, &module)
 	return module, nil
 }
 
 // Gets parent and child dependency tree from Gemfile.lock
 func GetLockedDependencies(path string) ([]Package, error) {
 
-	manifest, err := detectManifest(path, DETECTION_MODE_LOCK)
+	manifest, err := detectManifest(path, detectionModeLock)
 	if err != nil {
 		return []Package{}, err
 	}
@@ -358,7 +360,7 @@ func GetLockedDependencies(path string) ([]Package, error) {
 // Builds parent and child dependency tree from .gemspec
 func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 
 	if err != nil {
 		log.Fatal(err)
@@ -367,27 +369,27 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 	if !isFullPath {
 		for _, dir := range files {
 			if dir.IsDir() {
-				fullPath := filepath.Join(path, dir.Name(), SPEC_DEFAULT_DIR)
+				fullPath := filepath.Join(path, dir.Name(), specDefaultDir)
 				BuildSpecDependencies(fullPath, true, module)
 				return
 			}
 		}
 	}
 
-	cachePath := strings.Replace(path, SPEC_DEFAULT_DIR, CACHE_DEFAULT_DIR, 1)
+	cachePath := strings.Replace(path, specDefaultDir, cacheDefaultDir, 1)
 
 	name, version, _ := rootGem(cachePath, cleanName(module.Name))
 	versionedName := fmt.Sprintf("%s-%s", name, version)
 
-	rootSha, err := checkSum(cachePath, versionedName, true)
+	rootSha, err := checkSum(cachePath, versionedName)
 	if err == nil && rootSha != "" {
 		module.Checksum = rootSha
 	}
 	if module.Checksum == "" {
-		module.Checksum = NONE
+		module.Checksum = noAssertion
 	}
 
-	copyRight, LicenseText, LicensePath, err := extractRootLicense(*rootPath, cleanName(module.Name))
+	copyRight, LicenseText, LicensePath, err := extractRootLicense(*rootPath)
 	if err == nil {
 		module.CopyRight = copyRight
 		module.LicenseText = LicenseText
@@ -395,23 +397,23 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 	}
 
 	for i, f := range files {
-		if filepath.Ext(f.Name()) == SPEC_EXTENSION {
+		if filepath.Ext(f.Name()) == specExtension {
 
 			specPath := filepath.Join(path, f.Name())
 
 			module.Specifications = append(module.Specifications, getSpecs(specPath))
-			fileName := cleanName(strings.Replace(f.Name(), SPEC_EXTENSION, "", 1))
+			fileName := cleanName(strings.Replace(f.Name(), specExtension, "", 1))
 
-			sha, err := checkSum(cachePath, fileName, true)
+			sha, err := checkSum(cachePath, fileName)
 			if err == nil {
 				module.Specifications[i].Checksum = sha
 			}
 			if module.Specifications[i].Checksum == "" {
-				module.Specifications[i].Checksum = NONE
+				module.Specifications[i].Checksum = noAssertion
 			}
 			module.Specifications[i].Name = fileName
 
-			copyRight, LicenseText, LicensePath, err := extractLicense(SPEC_DEPENDENCY_PATH, fileName, false)
+			copyRight, LicenseText, LicensePath, err := extractLicense(specDependencyPath, fileName, false)
 			if err == nil {
 				module.Specifications[i].CopyRight = copyRight
 				module.Specifications[i].LicenseText = LicenseText
@@ -506,7 +508,6 @@ func ReduceSpec(row, column string, spec *Spec) {
 	case "spec.add_runtime_dependency":
 		if strings.ContainsAny(row, "[]") {
 			value := fmt.Sprintf("%s%s%s", clean(row, "<", ">"), " ", clean(row, "[", "]"))
-			//fmt.Println("passed")
 			spec.RuntimeDependencies = append(spec.RuntimeDependencies, value)
 		} else {
 			_, value := strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[0], strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[1], " ", "")
@@ -533,7 +534,7 @@ func ReduceSpec(row, column string, spec *Spec) {
 		if strings.ContainsAny(row, "[]") {
 			value := fmt.Sprintf("%s%s%s", clean(row, "<", ">"), " ", clean(row, "[", "]"))
 			if !isDuplicate(value, *spec) {
-				spec.RuntimeDependencies = append(spec.DevelopmentDependencies, value)
+				spec.DevelopmentDependencies = append(spec.DevelopmentDependencies, value)
 			}
 		} else {
 			_, value := strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[0], strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[1], " ", "")
@@ -574,7 +575,7 @@ func BuildLockDependencyTree(rows []string) {
 
 		currentPosition := len(line) - len(strings.TrimLeft(line, " "))
 
-		if value == TITLE {
+		if value == Title {
 			startIndex = i
 			specPosition = currentPosition
 		}
@@ -589,7 +590,7 @@ func BuildLockDependencyTree(rows []string) {
 
 		if currentPosition < specPosition {
 
-			linesToRead := lines[indexOf(TITLE, newLines)+1:]
+			linesToRead := lines[indexOf(Title, newLines)+1:]
 
 			if hasLines(linesToRead) {
 				buildTree(linesToRead)
@@ -602,85 +603,37 @@ func BuildLockDependencyTree(rows []string) {
 		}
 
 	}
-
 }
 
 // Compute SHA 256 Checksum for gems
-func checkSum(path string, filename string, isFullPath bool) (string, error) {
-
-	var sha string
-	files, err := ioutil.ReadDir(path)
-
-	if err != nil {
+func checkSum(path string, filename string) (sha string, err error) {
+	// I don't get this. Is it an error?
+	if !strings.Contains(path, cacheDefaultDir) {
 		return "", nil
 	}
-
-	if !isFullPath {
-
-		for _, f := range files {
-			if f.IsDir() {
-				fullPath := filepath.Join(path, f.Name(), CACHE_DEFAULT_DIR)
-				return checkSum(fullPath, filename, true)
-			}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		path, err = gemDir()
+		if err != nil {
+			return "", fmt.Errorf("getting gemdir: %w", err)
 		}
-
-	} else {
-
-		if !strings.Contains(path, CACHE_DEFAULT_DIR) {
-			return "", nil
-		}
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			path = gemDir()
-		}
-		var ops = runtime.GOOS
-		if strings.Contains(strings.ToLower(ops), "linux") {
-			ops = "linux"
-		}
-		if strings.Contains(strings.ToLower(ops), "darwin") {
-			ops = "darwin"
-		}
-		if strings.Contains(strings.ToLower(ops), "windows") {
-			ops = "windows"
-		}
-		switch ops {
-		case "linux":
-			linuxcmd := "sha256sum"
-			cmd := exec.Command(linuxcmd, filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
-			output, err := cmd.Output()
-			if err != nil {
-				return "", err
-			}
-			sha = strings.Fields(string(output))[0]
-		case "windows":
-			sha256, err := getSHA(filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
-			if err != nil {
-				return "", err
-			}
-			sha = sha256
-		case "darwin":
-			osxCmd := `shasum`
-			cmd := exec.Command(osxCmd, "-a", "256", filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
-			output, err := cmd.Output()
-			if err != nil {
-				return "", err
-			}
-			sha = strings.Fields(string(output))[0]
-
-		}
-
 	}
 
-	return sha, nil
-
+	// This usedto have per arch shell outs to
+	// sha256 and others, i swapped for the internal
+	// pure go implementation.
+	sha256, err := getSHA(filepath.Join(path, filename+gemDefaultExtension))
+	if err != nil {
+		return "", err
+	}
+	return sha256, nil
 }
 
 // Gets the root dependency name and version
 func rootGem(path string, filename string) (string, string, error) {
-
 	var name, version string
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
-		log.Fatal(err)
+		return "", "", fmt.Errorf("reading path: %w", err)
 	}
 	for _, f := range files {
 
@@ -705,37 +658,33 @@ func rootGem(path string, filename string) (string, string, error) {
 	}
 
 	return name, version, nil
-
 }
 
 // Extracts Root License Info
-func extractRootLicense(path string, filename string) (string, string, string, error) {
-
+func extractRootLicense(path string) (string, string, string, error) {
 	var copyright string
 	var text string
 	var licensePath string
 
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
-		fmt.Println("error extracting licence from :" + path)
-		return "", "", "", err
+		return "", "", "", fmt.Errorf("reading dir %s: %w", path, err)
 	}
 	licensePath = path
 	for _, f := range files {
-		if strings.Contains(f.Name(), LICENSE_DEFAULT_FILE) {
+		if strings.Contains(f.Name(), licenseDefaultFile) {
 			path = filepath.Join(path, f.Name())
 			break
 		}
 	}
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Println("File reading error", err)
-		return "", "", "", err
+		return "", "", "", fmt.Errorf("reading file: %w", err)
 	}
 	text = string(data)
 	rows := Content(path)
 	for _, row := range rows {
-		if strings.Contains(row, COPYRIGHT_DEFAULT_LABEL) {
+		if strings.Contains(row, copyrightDefaultLabel) {
 			copyright = row
 			break
 		}
@@ -747,13 +696,12 @@ func extractRootLicense(path string, filename string) (string, string, string, e
 
 // Extracts Child License Info
 func extractLicense(path string, filename string, isFullPath bool) (string, string, string, error) {
-
 	var copyright string
 	var text string
 	var licensePath string
 
 	if !isFullPath {
-		files, err := ioutil.ReadDir(path)
+		files, err := os.ReadDir(path)
 		if err != nil {
 			return "", "", "", err
 		}
@@ -764,31 +712,29 @@ func extractLicense(path string, filename string, isFullPath bool) (string, stri
 				return extractLicense(fullPath, filename, true)
 			}
 		}
-
 	} else {
-		if !strings.Contains(path, GEM_DEFAULT_DIR) {
-			path = filepath.Join(path, GEM_DEFAULT_DIR, filename)
+		if !strings.Contains(path, gemDefaultDir) {
+			path = filepath.Join(path, gemDefaultDir, filename)
 		}
-		files, err := ioutil.ReadDir(path)
+		files, err := os.ReadDir(path)
 		if err != nil {
-			//fmt.Println(fmt.Sprintf("file or directory doesn't exist at %s ",path))
-			return "", "", "", err
+			return "", "", "", fmt.Errorf("reading directory: %w", err)
 		}
 		licensePath = path
-		sampleLicenses := []string{LICENSE_DEFAULT_FILE, "GPL", "LGPL", "PSFL", "LICENCE.txt"}
+		sampleLicenses := []string{licenseDefaultFile, "GPL", "LGPL", "PSFL", "LICENCE.txt"}
 		for _, f := range files {
 			if strings.ContainsAny(f.Name(), strings.Join(sampleLicenses, " ")) {
 				path = filepath.Join(path, f.Name())
 				break
 			}
 		}
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err == nil {
 			text = string(data)
 		}
 		rows := Content(path)
 		for _, row := range rows {
-			if strings.Contains(row, COPYRIGHT_DEFAULT_LABEL) {
+			if strings.Contains(row, copyrightDefaultLabel) {
 				copyright = row
 				break
 			}
@@ -799,7 +745,7 @@ func extractLicense(path string, filename string, isFullPath bool) (string, stri
 
 }
 func validateProjectType(path string) bool {
-	if _, err := detectManifest(path, DETECTION_MODE_SPEC); err != nil {
+	if _, err := detectManifest(path, detectionModeSpec); err != nil {
 		return false
 	}
 	return true
@@ -807,9 +753,8 @@ func validateProjectType(path string) bool {
 
 // Constructs dependency tree recursively
 func buildTree(linesToRead []Line) {
-
 	var startIndex, stopIndex int
-	var children = []Line{}
+	var children []Line
 	var nextBatch = []Line{}
 
 	lastPosition := linesToRead[0].Position
@@ -856,28 +801,22 @@ func buildTree(linesToRead []Line) {
 	if hasLines(nextBatch) {
 		buildTree(nextBatch)
 	}
-
 }
 
-// Get child dependency info
-func childDepInfo(value string) (string, string, string) {
-
-	var version, name, fullname string
+// childDepInfo reads child dependency info
+func childDepInfo(value string) (name, version string) {
 	stp := strings.Index(value, `"`)
 	runes := []rune(value)
 	name = string(runes[0:stp])
 	rn := strings.Split(string(runes[stp:]), ",")
 	for i := 0; i < len(rn); i++ {
-		version = version + strings.ReplaceAll(strings.ReplaceAll(rn[i], " ", ""), `"`, "")
+		version += strings.ReplaceAll(strings.ReplaceAll(rn[i], " ", ""), `"`, "")
 	}
 	if strings.ContainsAny(version, "#{") {
-		version = NONE
-	}
-	if version != NONE {
-		fullname = strings.ReplaceAll(fmt.Sprintf("%s %s", name, version), " ", "")
+		version = noAssertion
 	}
 
-	return name, fullname, version
+	return name, version
 }
 
 // Scans the provided path for ecosystem manifest file
@@ -885,20 +824,20 @@ func detectManifest(path, mode string) (string, error) {
 
 	var manifest string
 	var err error
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, f := range files {
 
 		switch mode {
-		case DETECTION_MODE_LOCK:
-			if filepath.Ext(f.Name()) == LOCK_EXTENSION || filepath.Ext(f.Name()) == LEGACY_LOCK_EXTENSION {
+		case detectionModeLock:
+			if filepath.Ext(f.Name()) == lockExtension || filepath.Ext(f.Name()) == legacyLockExtension {
 				manifest = f.Name()
 				err = errors.New("No file with extension '.lock' was detected in " + path)
 			}
-		case DETECTION_MODE_SPEC:
-			if filepath.Ext(f.Name()) == SPEC_EXTENSION {
+		case detectionModeSpec:
+			if filepath.Ext(f.Name()) == specExtension {
 				manifest = f.Name()
 				err = errors.New("No file with extension '.gemspec' was detected in " + path)
 			}
@@ -917,11 +856,11 @@ func detectManifest(path, mode string) (string, error) {
 	return manifest, err
 }
 
+// Wow this is actually modifying the project :/
 // Detect whether current OS is added in the Gemfile.lock PLATFORMS section
 // Add if not detected for better user experience
 func ensurePlatform(path string) bool {
-
-	manifest, err := detectManifest(path, DETECTION_MODE_LOCK)
+	manifest, err := detectManifest(path, detectionModeLock)
 	if err != nil || manifest == "" {
 		return false
 	}
@@ -952,7 +891,7 @@ func ensurePlatform(path string) bool {
 		fileContent += line
 		fileContent += "\n"
 	}
-	return ioutil.WriteFile(path, []byte(fileContent), 0644) == nil
+	return os.WriteFile(path, []byte(fileContent), 0644) == nil // nolint:gosec
 }
 
 // Get exact index in file to append current OS value
@@ -963,7 +902,7 @@ func getInsertIndex(rows []string) (int, int) {
 	for i, line := range rows {
 		value := strings.Trim(line, " ")
 		currentPosition = len(line) - len(strings.TrimLeft(line, " "))
-		if value == PLATFORMS_DEFAULT_NAME {
+		if value == platformsDefaultName {
 			PlatformFound = true
 		}
 		if PlatformFound && value == "" {
@@ -976,14 +915,13 @@ func getInsertIndex(rows []string) (int, int) {
 }
 
 // Get local gem paths from env
-func getGemPaths() ([]string, []string) {
-
+func getGemPaths() ([]string, []string, error) {
 	var start, stop, reading bool
 	locations, secondaryLocation := []string{}, []string{}
 	cmd := exec.Command("gem", "env")
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		return locations, secondaryLocation, fmt.Errorf("getting env from gem: %w", err)
 	}
 	paths := strings.Fields(string(output))
 	for i, path := range paths {
@@ -994,67 +932,65 @@ func getGemPaths() ([]string, []string) {
 		}
 		if start {
 			reading = true
-			if strings.Contains(path, GEM_DEFAULT_EXTENSION) {
+			if strings.Contains(path, gemDefaultExtension) {
 				secondaryLocation = append(secondaryLocation, path)
-			} else {
-				if path != "GEM" && path != "PATHS:" {
-					locations = append(locations, path)
-				}
+			} else if path != "GEM" && path != "PATHS:" {
+				locations = append(locations, path)
 			}
 
 		}
 		if reading && path != "-" && path != "GEM" && path != "PATHS:" {
-			if strings.Contains(path, GEM_DEFAULT_EXTENSION) {
+			if strings.Contains(path, gemDefaultExtension) {
 				secondaryLocation = append(secondaryLocation, path)
 			} else {
 				locations = append(locations, path)
 			}
 		}
 	}
-	return locations, secondaryLocation
+	return locations, secondaryLocation, nil
 }
 
 // Build tree mapping from all gems detected in gem paths
 func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 
 	localSpecs := []Spec{}
+	primaryLocation, _ := gemDir()
 
 	for _, installPath := range paths {
-		specPath := filepath.Join(installPath, SPEC_DEFAULT_DIR)
-		cachePath := filepath.Join(installPath, CACHE_DEFAULT_DIR)
-		primaryLocation := gemDir()
+		specPath := filepath.Join(installPath, specDefaultDir)
+		cachePath := filepath.Join(installPath, cacheDefaultDir)
 		checkSumPaths := []string{cachePath, secondaryLocation, primaryLocation}
-		licensePath := filepath.Join(installPath, GEM_DEFAULT_DIR)
+		licensePath := filepath.Join(installPath, gemDefaultDir)
 
 		if _, err := os.Stat(specPath); err != nil {
 			continue
 		}
 
-		files, err := ioutil.ReadDir(specPath)
+		files, err := os.ReadDir(specPath)
 		if err != nil {
 			log.Fatal(err)
 		}
 		for _, f := range files {
-			if !f.IsDir() && strings.Contains(f.Name(), SPEC_EXTENSION) {
+			if !f.IsDir() && strings.Contains(f.Name(), specExtension) {
 				fullSpecsPath := filepath.Join(specPath, f.Name())
 				spec := getSpecs(fullSpecsPath)
 				if spec.Version == "" {
 					spec.Version = getExistingVersion(cleanName(spec.Name))
 				}
-				fileName := strings.Replace(f.Name(), SPEC_EXTENSION, "", 1)
+				fileName := strings.Replace(f.Name(), specExtension, "", 1)
 
 				for _, csp := range checkSumPaths {
 					if _, err := os.Stat(csp); os.IsNotExist(err) {
 						continue
 					}
-					sha, err := checkSum(csp, fileName, true)
+					sha, err := checkSum(csp, fileName)
 					if err == nil && sha != "" {
 						spec.Checksum = sha
 						break
 					}
 				}
 				if spec.Checksum == "" {
-					spec.Checksum = NONE
+					spec.Checksum = noAssertion
 				}
 				fullLicensePath := filepath.Join(licensePath, fileName)
 				copyRight, LicenseText, LicensePath, err := extractLicense(fullLicensePath, fileName, true)
@@ -1088,9 +1024,9 @@ func lookupGemInfo(name, version string) Spec {
 	}
 	if len(versionedSpecs) == 1 {
 		return versionedSpecs[0]
-	} else {
-		latestVersionInfo = versionedSpecs[0]
 	}
+	latestVersionInfo = versionedSpecs[0]
+
 	for _, spec := range versions {
 		if currentVersion, err := strconv.Atoi(strings.Split(spec.Version, ".")[0]); err == nil {
 			if latestVersion, err := strconv.Atoi(strings.Split(latestVersionInfo.Version, ".")[0]); err == nil && currentVersion > latestVersion {
@@ -1103,12 +1039,10 @@ func lookupGemInfo(name, version string) Spec {
 }
 
 // Initialize in-memory dependency cache
-func initializeDepCache(wg *sync.WaitGroup) error {
-
-	paths, secPaths := getGemPaths()
-	secondaryCachePath := gemDir()
+func initializeDepCache(wg *sync.WaitGroup, paths, secPaths []string) {
+	secondaryCachePath, _ := gemDir()
 	if len(secPaths) > 0 {
-		secondaryCachePath = filepath.Join(secPaths[0], CACHE_DEFAULT_DIR)
+		secondaryCachePath = filepath.Join(secPaths[0], cacheDefaultDir)
 	}
 	depSpecs := buildLocalTree(paths, secondaryCachePath)
 	for _, dep := range depSpecs {
@@ -1127,16 +1061,13 @@ func initializeDepCache(wg *sync.WaitGroup) error {
 			dep.Name = cleanName(dep.Name)
 			dependencyMap[name].versions[v] = dep
 		}
-
 	}
 	wg.Done()
-	return nil
 }
 
 // gets version from specified range
 func getRangedVersion(rv string) string {
-
-	_, _, v := childDepInfo(rv)
+	_, v := childDepInfo(rv)
 	if strings.ContainsAny(v, "~>") {
 		v = strings.Fields(strings.ReplaceAll(v, "~>", " "))[0]
 		if strings.Contains(v, ">") {
@@ -1152,7 +1083,7 @@ func getExistingVersion(gem string) string {
 	cmd := exec.Command("gem", "query", "-e", gem)
 	output, err := cmd.Output()
 	if err != nil {
-		return NONE
+		return noAssertion
 	}
 	lines := strings.Fields(string(output))
 	var s string
@@ -1195,12 +1126,11 @@ func Content(path string) []string {
 
 // Get the first column of a row
 func columns(row string) string {
-
-	var seperator string = " "
+	var separator = " "
 	if strings.Contains(row, "(") {
-		seperator = "("
+		separator = "("
 	}
-	return strings.SplitN(strings.TrimLeft(row, " "), seperator, 2)[0]
+	return strings.SplitN(strings.TrimLeft(row, " "), separator, 2)[0]
 }
 
 // Build a slice from a row 'email,author ...'
@@ -1307,22 +1237,21 @@ func hasLines(object []Line) bool {
 
 // Auto create Rakefile if not detected
 func hasRakefile(path string) bool {
-
-	filename := filepath.Join(path, RAKEFILE_DEFAULT_NAME)
+	filename := filepath.Join(path, rakeFileDefaultName)
 	if _, err := os.Stat(filename); err == nil {
 		return true
 	}
-	return ioutil.WriteFile(filename, []byte("require \"bundler/gem_tasks\" \ntask :default => :spec"), 0644) == nil
+	return os.WriteFile(filename, []byte("require \"bundler/gem_tasks\" \ntask :default => :spec"), 0600) == nil
 }
 
 // Gets the gem installation directory
-func gemDir() string {
+func gemDir() (string, error) {
 	cmd := exec.Command("gem", "environment", "gemdir")
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println(err)
+		return "", fmt.Errorf("getting gemdir from env: %w", err)
 	}
-	return filepath.Join(strings.Fields(string(output))[0], CACHE_DEFAULT_DIR)
+	return filepath.Join(strings.Fields(string(output))[0], cacheDefaultDir), nil
 }
 
 // extracts authors from row
@@ -1339,12 +1268,12 @@ func getAuthors(row string) []string {
 func getSHA(filename string) (string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return "", nil
+		return "", fmt.Errorf("opening file: %w", err)
 	}
 	defer f.Close()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return "", nil
+		return "", fmt.Errorf("writing to hash: %w", err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
