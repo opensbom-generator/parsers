@@ -6,4 +6,4 @@ import (
 	"errors"
 )
 
-var errDependenciesNotFound error = errors.New("unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `swift build`")
+var errDependenciesNotFound = errors.New("unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `swift build`")

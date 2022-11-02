@@ -13,7 +13,7 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type pkg struct {
+type Swift struct {
 	metadata plugin.Metadata
 }
 
@@ -23,8 +23,8 @@ const (
 )
 
 // New creates a new Swift package instance
-func New() *pkg {
-	return &pkg{
+func New() *Swift {
+	return &Swift{
 		metadata: plugin.Metadata{
 			Name:       "Swift Package Manager",
 			Slug:       "swift",
@@ -35,7 +35,7 @@ func New() *pkg {
 }
 
 // GetVersion returns Swift language version
-func (m *pkg) GetVersion() (string, error) {
+func (m *Swift) GetVersion() (string, error) {
 	cmd := exec.Command("swift", "--version")
 	output, err := cmd.Output()
 	if err != nil {
@@ -48,17 +48,17 @@ func (m *pkg) GetVersion() (string, error) {
 }
 
 // GetMetadata returns root package information base on path given
-func (m *pkg) GetMetadata() plugin.Metadata {
+func (m *Swift) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // SetRootModule sets root package information base on path given
-func (m *pkg) SetRootModule(path string) error {
+func (m *Swift) SetRootModule(path string) error {
 	return nil
 }
 
 // GetRootModule returns root package information base on path given
-func (m *pkg) GetRootModule(path string) (*meta.Package, error) {
+func (m *Swift) GetRootModule(path string) (*meta.Package, error) {
 	cmd := exec.Command("swift", "package", "describe", "--type", "json")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -66,7 +66,7 @@ func (m *pkg) GetRootModule(path string) (*meta.Package, error) {
 		return nil, err
 	}
 
-	var description SwiftPackageDescription
+	var description PackageDescription
 	if err := json.NewDecoder(bytes.NewReader(output)).Decode(&description); err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (m *pkg) GetRootModule(path string) (*meta.Package, error) {
 // in the given project directory,
 // this is a plain list of all used modules
 // (no nested or tree view)
-func (m *pkg) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Swift) ListUsedModules(path string) ([]meta.Package, error) {
 	cmd := exec.Command("swift", "package", "show-dependencies", "--disable-automatic-resolution", "--format", "json")
 	cmd.Dir = path
 	output, err := cmd.Output()
@@ -89,15 +89,15 @@ func (m *pkg) ListUsedModules(path string) ([]meta.Package, error) {
 		return nil, err
 	}
 
-	var root SwiftPackageDependency
+	var root PackageDependency
 	if err := json.NewDecoder(bytes.NewReader(output)).Decode(&root); err != nil {
 		return nil, err
 	}
 
-	var dependencies []SwiftPackageDependency
+	var dependencies []PackageDependency
 
-	var recurse func(SwiftPackageDependency)
-	recurse = func(dep SwiftPackageDependency) {
+	var recurse func(PackageDependency)
+	recurse = func(dep PackageDependency) {
 		for _, nested := range dep.Dependencies {
 			dependencies = append(dependencies, nested)
 			recurse(nested)
@@ -105,7 +105,7 @@ func (m *pkg) ListUsedModules(path string) ([]meta.Package, error) {
 	}
 	recurse(root)
 
-	var collection []meta.Package
+	collection := []meta.Package{}
 	for _, dep := range dependencies {
 		mod := dep.Module()
 		collection = append(collection, *mod)
@@ -120,8 +120,8 @@ func (m *pkg) ListUsedModules(path string) ([]meta.Package, error) {
 // this is a one level only list of all used modules,
 // and each with its direct dependency only
 // (similar output to ListUsedModules but with direct dependency only)
-func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
-	var collection []meta.Package
+func (m *Swift) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+	collection := []meta.Package{}
 
 	mod, err := m.GetRootModule(path)
 	if err != nil {
@@ -136,7 +136,7 @@ func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 		return nil, err
 	}
 
-	var root SwiftPackageDependency
+	var root PackageDependency
 	if err := json.NewDecoder(bytes.NewReader(output)).Decode(&root); err != nil {
 		return nil, err
 	}
@@ -150,14 +150,14 @@ func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 }
 
 // IsValid checks if the project dependency file provided in the contract exists
-func (m *pkg) IsValid(path string) bool {
+func (m *Swift) IsValid(path string) bool {
 	return helper.Exists(filepath.Join(path, ManifestFile))
 }
 
 // HasModulesInstalled checks whether
 // the current project (based on given path)
 // has the dependent packages installed
-func (m *pkg) HasModulesInstalled(path string) error {
+func (m *Swift) HasModulesInstalled(path string) error {
 	if helper.Exists(filepath.Join(path, BuildDirectory)) {
 		return nil
 	}
