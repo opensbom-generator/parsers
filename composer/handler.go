@@ -10,30 +10,30 @@ import (
 	"github.com/opensbom-generator/parsers/plugin"
 )
 
-type composer struct {
+type Composer struct {
 	metadata plugin.Metadata
 	command  *helper.Cmd
 }
 
 // New ...
-func New() *composer {
-	return &composer{
+func New() *Composer {
+	return &Composer{
 		metadata: plugin.Metadata{
 			Name:       "composer Package Manager",
 			Slug:       "composer",
-			Manifest:   []string{COMPOSER_JSON_FILE_NAME},
-			ModulePath: []string{COMPOSER_VENDOR_FOLDER},
+			Manifest:   []string{LockFileName},
+			ModulePath: []string{VendorFolderName},
 		},
 	}
 }
 
 // GetMetadata ...
-func (m *composer) GetMetadata() plugin.Metadata {
+func (m *Composer) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
 
 // IsValid ...
-func (m *composer) IsValid(path string) bool {
+func (m *Composer) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
@@ -43,7 +43,7 @@ func (m *composer) IsValid(path string) bool {
 }
 
 // HasModulesInstalled ...
-func (m *composer) HasModulesInstalled(path string) error {
+func (m *Composer) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
 		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return nil
@@ -53,7 +53,7 @@ func (m *composer) HasModulesInstalled(path string) error {
 }
 
 // GetVersion ...
-func (m *composer) GetVersion() (string, error) {
+func (m *Composer) GetVersion() (string, error) {
 	if err := m.buildCmd(VersionCmd, "."); err != nil {
 		return "", err
 	}
@@ -62,22 +62,22 @@ func (m *composer) GetVersion() (string, error) {
 }
 
 // SetRootModule ...
-func (m *composer) SetRootModule(path string) error {
+func (m *Composer) SetRootModule(path string) error {
 	return nil
 }
 
 // GetRootModule ...
-func (m *composer) GetRootModule(path string) (*meta.Package, error) {
+func (m *Composer) GetRootModule(path string) (*meta.Package, error) {
 	return nil, nil
 }
 
 // ListModulesWithDeps ...
-func (m *composer) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
+func (m *Composer) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
 	return m.ListUsedModules(path)
 }
 
 // ListUsedModules...
-func (m *composer) ListUsedModules(path string) ([]meta.Package, error) {
+func (m *Composer) ListUsedModules(path string) ([]meta.Package, error) {
 	modules, err := m.getModulesFromComposerLockFile(path)
 	if err != nil {
 		return nil, errFailedToReadComposerFile
