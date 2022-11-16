@@ -3,18 +3,22 @@
 package cargo
 
 import (
+	"errors"
+	"fmt"
 	"path/filepath"
+	"strings"
 
-	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
+	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 type Mod struct {
 	metadata      plugin.Metadata
 	rootModule    *meta.Package
-	command       *helper.Cmd
-	cargoMetadata Metadata
+	cargoMetadata *Metadata
+	impl          cargoImplementation
 }
 
 func New() *Mod {
@@ -22,9 +26,10 @@ func New() *Mod {
 		metadata: plugin.Metadata{
 			Name:       "Cargo Modules",
 			Slug:       "cargo",
-			Manifest:   []string{CargoTomlFile},
+			Manifest:   []string{tomlFileName},
 			ModulePath: []string{"vendor"},
 		},
+		impl: &defaultImplementation{},
 	}
 }
 func (m *Mod) GetMetadata() plugin.Metadata {
@@ -42,60 +47,83 @@ func (m *Mod) SetRootModule(path string) error {
 }
 
 func (m *Mod) GetVersion() (string, error) {
-	if err := m.buildCmd(VersionCmd, "."); err != nil {
-		return "", err
+	output, err := command.NewWithWorkDir(".", "cargo", "--version").RunSilentSuccessOutput()
+	if err != nil {
+		return "", fmt.Errorf("getting cargo version: %w", err)
 	}
 
-	return m.command.Output()
+	return strings.TrimPrefix(output.OutputTrimNL(), "cargo "), nil
 }
 
 func (m *Mod) GetRootModule(path string) (*meta.Package, error) {
-	if err := m.SetRootModule(path); err != nil {
-		return nil, err
+	if m.rootModule != nil {
+		return m.rootModule, nil
 	}
 
-	return m.rootModule, nil
+	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
+	if err != nil {
+		return nil, fmt.Errorf("getting cargo metadata: %w", err)
+	}
+
+	rootName, err := m.impl.getRootProjectName(path)
+	if err != nil {
+		return nil, fmt.Errorf("getting project name: %w", err)
+	}
+
+	cargoPackage := md.GetPackageByName(rootName)
+	metaPackage := m.impl.convertCargoPackageToMetaPackage(cargoPackage)
+
+	return &metaPackage, nil
 }
 
+// ListUsedModules returns the firs tier dependencies of the module
 func (m *Mod) ListUsedModules(path string) ([]meta.Package, error) {
-	var collection []meta.Package
-
-	rootModule, err := m.GetRootModule(path)
+	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting cargo metadata: %w", err)
 	}
 
-	collection = append(collection, *rootModule)
-	meta, err := m.getCargoMetadata(path)
+	mod, err := m.impl.getRootModule(md, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting root module: %w", err)
 	}
 
-	modules := convertMetadataToModulesList(meta.Packages)
-	collection = append(collection, modules...)
+	if err := m.impl.populateDependencies(md, &mod, false, nil); err != nil {
+		return nil, fmt.Errorf("populating deps of %s: %w", mod.Name, err)
+	}
 
-	return collection, nil
+	r := []meta.Package{}
+	for _, p := range mod.Packages {
+		r = append(r, *p)
+	}
+	return r, nil
 }
 
 func (m *Mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
-	modules, err := m.ListUsedModules(path)
+	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting cargo metadata: %w", err)
 	}
 
-	meta, err := m.getCargoMetadata(path)
+	mod, err := m.impl.getRootModule(md, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting root module: %w", err)
 	}
 
-	addDepthModules(modules, meta.Packages)
+	if err := m.impl.populateDependencies(md, &mod, true, nil); err != nil {
+		return nil, fmt.Errorf("populating deps of %s: %w", mod.Name, err)
+	}
 
-	return modules, nil
+	r := []meta.Package{}
+	for _, p := range mod.Packages {
+		r = append(r, *p)
+	}
+	return r, nil
 }
 
 func (m *Mod) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if util.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
 		}
 	}
@@ -103,8 +131,8 @@ func (m *Mod) IsValid(path string) bool {
 }
 
 func (m *Mod) HasModulesInstalled(path string) error {
-	if helper.Exists(filepath.Join(path, CargoLockFile)) {
+	if util.Exists(filepath.Join(path, lockFileName)) {
 		return nil
 	}
-	return errDependenciesNotFound
+	return errors.New("project lockfile not found")
 }

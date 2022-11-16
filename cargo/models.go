@@ -21,6 +21,8 @@ type Package struct {
 	Repository   string              `json:"repository"`
 	Homepage     string              `json:"homepage"`
 	License      string              `json:"license"`
+
+	Checksum string `json:"-"` // This data bit gets read from the lockfile
 }
 
 type PackageDependency struct {
@@ -34,4 +36,13 @@ type PackageDependency struct {
 	Features            []interface{} `json:"features"`
 	Target              interface{}   `json:"target"`
 	Registry            interface{}   `json:"registry"`
+}
+
+func (md *Metadata) GetPackageByName(name string) *Package {
+	for _, p := range md.Packages {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
 }
