@@ -3,7 +3,7 @@ module github.com/opensbom-generator/parsers
 go 1.19
 
 require (
-	github.com/go-enry/go-license-detector/v4 v4.2.0
+	github.com/go-enry/go-license-detector/v4 v4.3.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.5.0
 	github.com/pelletier/go-toml/v2 v2.0.5
