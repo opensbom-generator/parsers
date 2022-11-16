@@ -11,7 +11,7 @@ import (
 
 func TestReadLockFile(t *testing.T) {
 	sut := defaultImplementation{}
-	lock, err := sut.readLockFile("test_data")
+	lock, err := sut.ReadLockFile("test_data")
 	require.NoError(t, err)
 	require.NotNil(t, lock)
 	require.Len(t, lock.Packages, 70)
@@ -29,7 +29,7 @@ func TestReadLockFile(t *testing.T) {
 
 func TestReadConfigFile(t *testing.T) {
 	sut := defaultImplementation{}
-	conf, err := sut.readConfig("test_data/Cargo.toml")
+	conf, err := sut.ReadConfig("test_data/Cargo.toml")
 	require.NoError(t, err)
 	require.NotNil(t, conf)
 	require.Len(t, conf.Dependencies, 3)
@@ -42,7 +42,7 @@ func TestReadConfigFile(t *testing.T) {
 
 func TestGetCargoMetadata(t *testing.T) {
 	sut := defaultImplementation{}
-	data, err := sut.getCargoMetadata("test_data")
+	data, err := sut.GetCargoMetadata("test_data")
 	require.NoError(t, err)
 	require.NotNil(t, data)
 	require.Len(t, data.Packages, 56)
@@ -51,7 +51,7 @@ func TestGetCargoMetadata(t *testing.T) {
 
 func TestGetRootProjectName(t *testing.T) {
 	sut := defaultImplementation{}
-	name, err := sut.getRootProjectName("test_data")
+	name, err := sut.GetRootProjectName("test_data")
 	require.NoError(t, err)
 	require.NotEmpty(t, name)
 	require.Equal(t, "hello-server", name)
@@ -72,7 +72,7 @@ func TestConvertCargoPackageToModule(t *testing.T) {
 		Homepage:     "https://github.com/BurntSushi/aho-corasick",
 		License:      "Unlicense/MIT",
 	}
-	metaPackage := sut.convertCargoPackageToMetaPackage(cargoPackage)
+	metaPackage := sut.ConvertCargoPackageToMetaPackage(cargoPackage)
 	require.Equal(t, cargoPackage.Name, metaPackage.Name)
 	require.Equal(t, cargoPackage.Version, metaPackage.Version)
 	require.Equal(t, "John Doe", metaPackage.Supplier.Name)

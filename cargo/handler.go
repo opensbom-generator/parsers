@@ -32,6 +32,11 @@ func New() *Mod {
 		impl: &defaultImplementation{},
 	}
 }
+
+func (m *Mod) SetImplementation(impl cargoImplementation) {
+	m.impl = impl
+}
+
 func (m *Mod) GetMetadata() plugin.Metadata {
 	return m.metadata
 }
@@ -60,35 +65,35 @@ func (m *Mod) GetRootModule(path string) (*meta.Package, error) {
 		return m.rootModule, nil
 	}
 
-	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
+	md, err := m.impl.GetCargoMetadataIfNeeded(m, path)
 	if err != nil {
 		return nil, fmt.Errorf("getting cargo metadata: %w", err)
 	}
 
-	rootName, err := m.impl.getRootProjectName(path)
+	rootName, err := m.impl.GetRootProjectName(path)
 	if err != nil {
 		return nil, fmt.Errorf("getting project name: %w", err)
 	}
 
 	cargoPackage := md.GetPackageByName(rootName)
-	metaPackage := m.impl.convertCargoPackageToMetaPackage(cargoPackage)
+	metaPackage := m.impl.ConvertCargoPackageToMetaPackage(cargoPackage)
 
 	return &metaPackage, nil
 }
 
 // ListUsedModules returns the firs tier dependencies of the module
 func (m *Mod) ListUsedModules(path string) ([]meta.Package, error) {
-	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
+	md, err := m.impl.GetCargoMetadataIfNeeded(m, path)
 	if err != nil {
 		return nil, fmt.Errorf("getting cargo metadata: %w", err)
 	}
 
-	mod, err := m.impl.getRootModule(md, path)
+	mod, err := m.impl.GetRootModule(md, path)
 	if err != nil {
 		return nil, fmt.Errorf("getting root module: %w", err)
 	}
 
-	if err := m.impl.populateDependencies(md, &mod, false, nil); err != nil {
+	if err := m.impl.PopulateDependencies(md, &mod, false, nil); err != nil {
 		return nil, fmt.Errorf("populating deps of %s: %w", mod.Name, err)
 	}
 
@@ -100,17 +105,17 @@ func (m *Mod) ListUsedModules(path string) ([]meta.Package, error) {
 }
 
 func (m *Mod) ListModulesWithDeps(path string, globalSettingFile string) ([]meta.Package, error) {
-	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
+	md, err := m.impl.GetCargoMetadataIfNeeded(m, path)
 	if err != nil {
 		return nil, fmt.Errorf("getting cargo metadata: %w", err)
 	}
 
-	mod, err := m.impl.getRootModule(md, path)
+	mod, err := m.impl.GetRootModule(md, path)
 	if err != nil {
 		return nil, fmt.Errorf("getting root module: %w", err)
 	}
 
-	if err := m.impl.populateDependencies(md, &mod, true, nil); err != nil {
+	if err := m.impl.PopulateDependencies(md, &mod, true, nil); err != nil {
 		return nil, fmt.Errorf("populating deps of %s: %w", mod.Name, err)
 	}
 

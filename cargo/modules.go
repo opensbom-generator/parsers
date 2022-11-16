@@ -47,11 +47,11 @@ func getPackageSupplier(authors []string, defaultValue string) meta.Supplier {
 }
 
 func (m *Mod) getRootModule(path string) (meta.Package, error) {
-	md, err := m.impl.getCargoMetadataIfNeeded(m, path)
+	md, err := m.impl.GetCargoMetadataIfNeeded(m, path)
 	if err != nil {
 		return meta.Package{}, fmt.Errorf("getting cargo metadata: %w", err)
 	}
-	return m.impl.getRootModule(md, path)
+	return m.impl.GetRootModule(md, path)
 }
 
 func convertCargoPackageToRootModule(dep Package) meta.Package {
