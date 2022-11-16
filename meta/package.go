@@ -16,21 +16,21 @@ import (
 
 // Package is the package abstraction that the parsers return
 type Package struct {
-	Version                 string `json:"Version,omitempty"`
-	Name                    string
-	Path                    string `json:"Path,omitempty"`
-	LocalPath               string `json:"Dir"`
+	Version                 string `json:"version,omitempty"`
+	Name                    string `json:"name"`
+	Path                    string `json:"path,omitempty"`
+	LocalPath               string `json:"dir"`
 	Supplier                Supplier
-	PackageURL              string
+	PackageURL              string `json:"purl"`
 	Checksum                Checksum
-	PackageHomePage         string
-	PackageDownloadLocation string
-	LicenseConcluded        string
-	LicenseDeclared         string
-	CommentsLicense         string
+	PackageHomePage         string `json:"homePage"`
+	PackageDownloadLocation string `json:"downloadLocation"`
+	LicenseConcluded        string `json:"licenseConcluded"`
+	LicenseDeclared         string `json:"licenseDeclared"`
+	CommentsLicense         string `json:"licenseComments"`
 	OtherLicense            []license.License
-	Copyright               string
-	PackageComment          string
+	Copyright               string `json:"copyright"`
+	PackageComment          string `json:"comment"`
 	Root                    bool
 	Packages                map[string]*Package
 }
@@ -48,7 +48,7 @@ type Supplier struct {
 	Type            SupplierType
 	Name            string
 	Email           string
-	FuncGetSupplier func() string
+	FuncGetSupplier func() string `json:"-"`
 }
 
 func (s *Supplier) emailIsEmpty() bool {
