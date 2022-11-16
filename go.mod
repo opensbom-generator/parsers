@@ -11,7 +11,7 @@ require (
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.0
 	github.com/vifraa/gopom v0.2.1
-	golang.org/x/mod v0.6.0
+	golang.org/x/mod v0.7.0
 	sigs.k8s.io/release-utils v0.7.3
 )
 
