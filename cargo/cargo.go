@@ -2,6 +2,8 @@
 
 package cargo
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 import (
 	"encoding/json"
 	"fmt"
@@ -25,18 +27,20 @@ const (
 	lockFileName = "Cargo.lock"
 )
 
-// Implementation to fake later
+//counterfeiter:generate . cargoImplementation
+
+// cargoImplementation implemnents the functionality to read cargo files and run the required commands
 type cargoImplementation interface {
-	getCargoMetadata(string) (Metadata, error)
-	getCargoMetadataIfNeeded(*Mod, string) (*Metadata, error)
-	convertPackagesToModulesList([]*Package) (map[string]*meta.Package, error)
-	convertCargoPackageToMetaPackage(*Package) meta.Package
-	readLockFile(string) (*lockFile, error)
-	readConfig(string) (*config, error)
-	getRootProjectName(string) (string, error)
-	getPackageDependencies(*Metadata, string) ([]*Package, error)
-	getRootModule(*Metadata, string) (meta.Package, error)
-	populateDependencies(*Metadata, *meta.Package, bool, *map[string]*meta.Package) error
+	GetCargoMetadata(string) (Metadata, error)
+	GetCargoMetadataIfNeeded(*Mod, string) (*Metadata, error)
+	ConvertPackagesToModulesList([]*Package) (map[string]*meta.Package, error)
+	ConvertCargoPackageToMetaPackage(*Package) meta.Package
+	ReadLockFile(string) (*LockFile, error)
+	ReadConfig(string) (*Config, error)
+	GetRootProjectName(string) (string, error)
+	GetPackageDependencies(*Metadata, string) ([]*Package, error)
+	GetRootModule(*Metadata, string) (meta.Package, error)
+	PopulateDependencies(*Metadata, *meta.Package, bool, *map[string]*meta.Package) error
 }
 
 type defaultImplementation struct{}
@@ -50,7 +54,7 @@ type lockedPackage struct {
 	Packages     map[string]*lockedPackage
 }
 
-type lockFile struct {
+type LockFile struct {
 	Version  int
 	Packages []lockedPackage `toml:"package"`
 }
@@ -71,20 +75,20 @@ type binaryData struct {
 	Path string
 }
 
-type config struct {
+type Config struct {
 	Package         mainPackage
 	RawDependencies map[string]interface{} `toml:"dependencies"`
 	Dependencies    map[string]dependency  `toml:"omit"`
 	Bin             []binaryData
 }
 
-func (di *defaultImplementation) readLockFile(path string) (*lockFile, error) {
+func (di *defaultImplementation) ReadLockFile(path string) (*LockFile, error) {
 	data, err := os.ReadFile(filepath.Join(path, lockFileName))
 	if err != nil {
 		return nil, fmt.Errorf("opening cargo lockfile: %w", err)
 	}
 
-	lf := &lockFile{}
+	lf := &LockFile{}
 
 	if err := toml.Unmarshal(data, lf); err != nil {
 		return nil, fmt.Errorf("unmarshaling lockfile: %w", err)
@@ -93,13 +97,13 @@ func (di *defaultImplementation) readLockFile(path string) (*lockFile, error) {
 	return lf, nil
 }
 
-func (di *defaultImplementation) readConfig(path string) (*config, error) {
+func (di *defaultImplementation) ReadConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading toml configuration file: %w", err)
 	}
 
-	conf := &config{
+	conf := &Config{
 		Package:         mainPackage{},
 		RawDependencies: map[string]interface{}{},
 		Dependencies:    map[string]dependency{},
@@ -128,7 +132,7 @@ func (di *defaultImplementation) readConfig(path string) (*config, error) {
 	return conf, nil
 }
 
-func (di *defaultImplementation) getCargoMetadata(path string) (Metadata, error) {
+func (di *defaultImplementation) GetCargoMetadata(path string) (Metadata, error) {
 	// to be assembled from the output of:
 	// rustc --print cfg
 	// using target_arch target_vendor target_os target_env
@@ -149,7 +153,7 @@ func (di *defaultImplementation) getCargoMetadata(path string) (Metadata, error)
 	}
 
 	// Get the locked datato get the hashes
-	lockedData, err := di.readLockFile(path)
+	lockedData, err := di.ReadLockFile(path)
 	if err != nil {
 		return cargoMetadata, fmt.Errorf("getting locked data: %w", err)
 	}
@@ -170,20 +174,20 @@ func (di *defaultImplementation) getCargoMetadata(path string) (Metadata, error)
 	return cargoMetadata, nil
 }
 
-func (di *defaultImplementation) getRootProjectName(path string) (string, error) {
-	data, err := di.readConfig(filepath.Join(path, tomlFileName))
+func (di *defaultImplementation) GetRootProjectName(path string) (string, error) {
+	data, err := di.ReadConfig(filepath.Join(path, tomlFileName))
 	if err != nil {
 		return "", fmt.Errorf("parsing cargo toml configuration: %w", err)
 	}
 	return data.Package.Name, nil
 }
 
-// convertMetadataToModulesList gets a list of cargo metadata packages
+// ConvertMetadataToModulesList gets a list of cargo metadata packages
 // and converts it to our own metapackage
-func (di *defaultImplementation) convertPackagesToModulesList(cargoPackages []*Package) (map[string]*meta.Package, error) {
+func (di *defaultImplementation) ConvertPackagesToModulesList(cargoPackages []*Package) (map[string]*meta.Package, error) {
 	collection := map[string]*meta.Package{}
 	for _, dep := range cargoPackages {
-		module := di.convertCargoPackageToMetaPackage(dep)
+		module := di.ConvertCargoPackageToMetaPackage(dep)
 		// Why this?! Is download location so important?
 		if module.Name == "" || module.PackageDownloadLocation == "" {
 			return nil, fmt.Errorf("incomplete information when converting package")
@@ -193,9 +197,9 @@ func (di *defaultImplementation) convertPackagesToModulesList(cargoPackages []*P
 	return collection, nil
 }
 
-// convertCargoPackageToModule converts a cargo metadata
+// ConvertCargoPackageToModule converts a cargo metadata
 // package to a meta.Package
-func (di *defaultImplementation) convertCargoPackageToMetaPackage(dep *Package) meta.Package {
+func (di *defaultImplementation) ConvertCargoPackageToMetaPackage(dep *Package) meta.Package {
 	localPath := convertToLocalPath(dep.ManifestPath)
 	supplier := getPackageSupplier(dep.Authors, dep.Name)
 
@@ -235,7 +239,7 @@ func (di *defaultImplementation) convertCargoPackageToMetaPackage(dep *Package) 
 	return module
 }
 
-func (di *defaultImplementation) getPackageDependencies(md *Metadata, rootName string) ([]*Package, error) {
+func (di *defaultImplementation) GetPackageDependencies(md *Metadata, rootName string) ([]*Package, error) {
 	// First get the names of the deps
 	rootPackage := md.GetPackageByName(rootName)
 	if rootPackage == nil {
@@ -256,12 +260,12 @@ func (di *defaultImplementation) getPackageDependencies(md *Metadata, rootName s
 }
 
 // getCargoMetadataIfNeeded checks if we need to load metadata or not
-func (di *defaultImplementation) getCargoMetadataIfNeeded(m *Mod, path string) (*Metadata, error) {
+func (di *defaultImplementation) GetCargoMetadataIfNeeded(m *Mod, path string) (*Metadata, error) {
 	if m.cargoMetadata != nil {
 		return m.cargoMetadata, nil
 	}
 
-	newMd, err := di.getCargoMetadata(path)
+	newMd, err := di.GetCargoMetadata(path)
 	if err != nil {
 		return nil, err
 	}
@@ -272,19 +276,19 @@ func (di *defaultImplementation) getCargoMetadataIfNeeded(m *Mod, path string) (
 }
 
 // populateDependencies
-func (di *defaultImplementation) populateDependencies(
+func (di *defaultImplementation) PopulateDependencies(
 	md *Metadata, metaPackage *meta.Package, recurse bool, seen *map[string]*meta.Package,
 ) error {
 	if seen == nil {
 		seen = &map[string]*meta.Package{}
 	}
-	packages, err := di.getPackageDependencies(md, metaPackage.Name)
+	packages, err := di.GetPackageDependencies(md, metaPackage.Name)
 	if err != nil {
 		return fmt.Errorf("getting package dependencies: %w", err)
 	}
 
 	// Convert packages to metapackages
-	metaPackages, err := di.convertPackagesToModulesList(packages)
+	metaPackages, err := di.ConvertPackagesToModulesList(packages)
 	if err != nil {
 		return fmt.Errorf("converting cargo packages: %w", err)
 	}
@@ -305,7 +309,7 @@ func (di *defaultImplementation) populateDependencies(
 	// get deps of deps
 	for _, ptr := range metaPackages {
 		if _, ok := (*seen)[ptr.Name+":"+ptr.Version]; !ok {
-			if err := di.populateDependencies(md, ptr, true, seen); err != nil {
+			if err := di.PopulateDependencies(md, ptr, true, seen); err != nil {
 				return fmt.Errorf("getting dependencies of %s: %w", ptr.Name, err)
 			}
 		} else {
@@ -318,8 +322,8 @@ func (di *defaultImplementation) populateDependencies(
 	return nil
 }
 
-func (di *defaultImplementation) getRootModule(md *Metadata, path string) (meta.Package, error) {
-	name, err := di.getRootProjectName(path)
+func (di *defaultImplementation) GetRootModule(md *Metadata, path string) (meta.Package, error) {
+	name, err := di.GetRootProjectName(path)
 	if err != nil {
 		return meta.Package{}, err
 	}
