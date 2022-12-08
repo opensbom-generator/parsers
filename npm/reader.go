@@ -25,11 +25,9 @@ func DetectManifest(path string) string {
 		full_path := filepath.Join(path, manifests[i])
 		if _, err := os.Stat(full_path); err == nil {
 			return full_path
-		} else {
-			return nil
 		}
 	}
-
+	return ""
 }
 
 // ReadManifest will read a JSON file and unmarshall the data
@@ -52,20 +50,79 @@ func ReadManifest(manifest_file string) (map[string]interface{}, error) {
 // a struct representing the NPM v2 lockfile
 func ParseManifestV2(data map[string]interface{}) (PackageLockV2, error) {
 	// PackageV2 and PackageLockV2 come from model.go
-	lock := PackageLockV2
-	// fill in Name, Version and LockfileVersion
-	PackageLockV2.Name = data["name"]
-	PackageLockV2.Version = data["version"]
-	PackageLockV2.LockfileVersion = data["lockfileVersion"]
-	PackageLockV2.Requires = data["requires"]
+	lock := PackageLockV2{}
+	// fill in Name, Version, LockfileVersion and Requires
+	lock.Name = data["name"].(string)
+	lock.Version = data["version"].(string)
+	lock.LockfileVersion = int(data["lockfileVersion"].(float64))
+	lock.Requires = data["requires"].(bool)
 	// fill in Packages
+	// For V2 lockfile versions, there is no need to read
+	// dependencies because those contain an identical
+	// list formatted differently
+	lock.Packages = make(map[string]PackageV2)
 	packages := data["packages"].(map[string]interface{})
-	for pkg_name, pkg_obj := range packages {
+	for pkg_name, pkg_val := range packages {
+		pkg_data := pkg_val.(map[string]interface{})
+		// fill in root package info
+		if pkg_name == "" {
+			root := RootPackageV2{}
+			root.Name = pkg_data["name"].(string)
+			root.Version = pkg_data["version"].(string)
+			root.License = pkg_data["license"].(string)
 
-	}
-	// fill in Dependencies
-	dependencies := data["dependencies"].(map[string]interface{})
-	for dep_name, dep_obj := range dependencies {
+			// fill in dependencies and dev dependencies
+			// if present
+			if dependencies, ok := pkg_data["dependencies"].(map[string]interface{}); ok {
+				root.Dependencies = make(map[string]string)
+				for dep_name, dep_ver := range dependencies {
+					root.Dependencies[dep_name] = dep_ver.(string)
+				}
+			}
+			if devdependencies, ok := pkg_data["devDependencies"].(map[string]interface{}); ok {
+				root.DevDependencies = make(map[string]string)
+				for devdep_name, devdep_ver := range devdependencies {
+					root.DevDependencies[devdep_name] = devdep_ver.(string)
+				}
+			}
+			lock.RootPackage = root
 
+		} else {
+			pkg := PackageV2{}
+			pkg.Version = pkg_data["version"].(string)
+			pkg.Resolved = pkg_data["resolved"].(string)
+			pkg.Integrity = pkg_data["integrity"].(string)
+			// these values optionally appear in package-lock.json
+			if dev, ok := pkg_data["dev"].(bool); ok {
+				pkg.Dev = dev
+			}
+			if engines, ok := pkg_data["engines"].(map[string]interface{}); ok {
+				pkg.Engines = make(map[string]string)
+				for engine_name, engine_ver := range engines {
+					pkg.Engines[engine_name] = engine_ver.(string)
+				}
+			}
+			if dependencies, ok := pkg_data["dependencies"].(map[string]interface{}); ok {
+				pkg.Dependencies = make(map[string]string)
+				for dep_name, dep_ver := range dependencies {
+					pkg.Dependencies[dep_name] = dep_ver.(string)
+				}
+			}
+			if bins, ok := pkg_data["bin"].(map[string]interface{}); ok {
+				pkg.Bin = make(map[string]string)
+				for bin_name, bin_path := range bins {
+					pkg.Bin[bin_name] = bin_path.(string)
+				}
+			}
+			if deprecated, ok := pkg_data["deprecated"]; ok {
+				pkg.Deprecated = deprecated.(string)
+			}
+			if hasInstallScript, ok := pkg_data["hasInstallScript"]; ok {
+				pkg.HasInstallScript = hasInstallScript.(bool)
+			}
+			lock.Packages[pkg_name] = pkg
+
+		}
 	}
+	return lock, nil
 }
