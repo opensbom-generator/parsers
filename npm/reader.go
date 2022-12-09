@@ -22,9 +22,9 @@ var manifests = []string{"package-lock.json",
 // and returns the path to the manifest that exists
 func DetectManifest(path string) string {
 	for i := range manifests {
-		full_path := filepath.Join(path, manifests[i])
-		if _, err := os.Stat(full_path); err == nil {
-			return full_path
+		fullPath := filepath.Join(path, manifests[i])
+		if _, err := os.Stat(fullPath); err == nil {
+			return fullPath
 		}
 	}
 	return ""
@@ -33,15 +33,15 @@ func DetectManifest(path string) string {
 // ReadManifest will read a JSON file and unmarshall the data
 // into a map. The map is a key-value pair where the value is
 // of an unknown type.
-func ReadManifest(manifest_file string) (map[string]interface{}, error) {
+func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 	var data map[string]interface{}
-	content, err := os.ReadFile(manifest_file)
+	content, err := os.ReadFile(manifestFile)
 	if err != nil {
-		return nil, errors.New("Cannot read manifest file")
+		return nil, errors.New("cannot read manifest file")
 	}
 	err = json.Unmarshal(content, &data)
 	if err != nil {
-		return nil, errors.New("Cannot unmarshal JSON data")
+		return nil, errors.New("cannot unmarshal JSON data")
 	}
 	return data, nil
 }
@@ -62,66 +62,64 @@ func ParseManifestV2(data map[string]interface{}) (PackageLockV2, error) {
 	// list formatted differently
 	lock.Packages = make(map[string]PackageV2)
 	packages := data["packages"].(map[string]interface{})
-	for pkg_name, pkg_val := range packages {
-		pkg_data := pkg_val.(map[string]interface{})
+	for pkgName, pkgVal := range packages {
+		pkgData := pkgVal.(map[string]interface{})
 		// fill in root package info
-		if pkg_name == "" {
+		if pkgName == "" {
 			root := RootPackageV2{}
-			root.Name = pkg_data["name"].(string)
-			root.Version = pkg_data["version"].(string)
-			root.License = pkg_data["license"].(string)
+			root.Name = pkgData["name"].(string)
+			root.Version = pkgData["version"].(string)
+			root.License = pkgData["license"].(string)
 
 			// fill in dependencies and dev dependencies
 			// if present
-			if dependencies, ok := pkg_data["dependencies"].(map[string]interface{}); ok {
+			if dependencies, ok := pkgData["dependencies"].(map[string]interface{}); ok {
 				root.Dependencies = make(map[string]string)
-				for dep_name, dep_ver := range dependencies {
-					root.Dependencies[dep_name] = dep_ver.(string)
+				for depName, depVer := range dependencies {
+					root.Dependencies[depName] = depVer.(string)
 				}
 			}
-			if devdependencies, ok := pkg_data["devDependencies"].(map[string]interface{}); ok {
+			if devDependencies, ok := pkgData["devDependencies"].(map[string]interface{}); ok {
 				root.DevDependencies = make(map[string]string)
-				for devdep_name, devdep_ver := range devdependencies {
-					root.DevDependencies[devdep_name] = devdep_ver.(string)
+				for devDepName, devDepVer := range devDependencies {
+					root.DevDependencies[devDepName] = devDepVer.(string)
 				}
 			}
 			lock.RootPackage = root
-
 		} else {
 			pkg := PackageV2{}
-			pkg.Version = pkg_data["version"].(string)
-			pkg.Resolved = pkg_data["resolved"].(string)
-			pkg.Integrity = pkg_data["integrity"].(string)
+			pkg.Version = pkgData["version"].(string)
+			pkg.Resolved = pkgData["resolved"].(string)
+			pkg.Integrity = pkgData["integrity"].(string)
 			// these values optionally appear in package-lock.json
-			if dev, ok := pkg_data["dev"].(bool); ok {
+			if dev, ok := pkgData["dev"].(bool); ok {
 				pkg.Dev = dev
 			}
-			if engines, ok := pkg_data["engines"].(map[string]interface{}); ok {
+			if engines, ok := pkgData["engines"].(map[string]interface{}); ok {
 				pkg.Engines = make(map[string]string)
-				for engine_name, engine_ver := range engines {
-					pkg.Engines[engine_name] = engine_ver.(string)
+				for engineName, engineVer := range engines {
+					pkg.Engines[engineName] = engineVer.(string)
 				}
 			}
-			if dependencies, ok := pkg_data["dependencies"].(map[string]interface{}); ok {
+			if dependencies, ok := pkgData["dependencies"].(map[string]interface{}); ok {
 				pkg.Dependencies = make(map[string]string)
-				for dep_name, dep_ver := range dependencies {
-					pkg.Dependencies[dep_name] = dep_ver.(string)
+				for depName, depVer := range dependencies {
+					pkg.Dependencies[depName] = depVer.(string)
 				}
 			}
-			if bins, ok := pkg_data["bin"].(map[string]interface{}); ok {
+			if bins, ok := pkgData["bin"].(map[string]interface{}); ok {
 				pkg.Bin = make(map[string]string)
-				for bin_name, bin_path := range bins {
-					pkg.Bin[bin_name] = bin_path.(string)
+				for binName, binPath := range bins {
+					pkg.Bin[binName] = binPath.(string)
 				}
 			}
-			if deprecated, ok := pkg_data["deprecated"]; ok {
+			if deprecated, ok := pkgData["deprecated"]; ok {
 				pkg.Deprecated = deprecated.(string)
 			}
-			if hasInstallScript, ok := pkg_data["hasInstallScript"]; ok {
+			if hasInstallScript, ok := pkgData["hasInstallScript"]; ok {
 				pkg.HasInstallScript = hasInstallScript.(bool)
 			}
-			lock.Packages[pkg_name] = pkg
-
+			lock.Packages[pkgName] = pkg
 		}
 	}
 	return lock, nil

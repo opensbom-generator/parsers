@@ -6,6 +6,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDetectManifest(t *testing.T) {
+	path := DetectManifest("test/project/ancient")
+	assert.Equal(t, path, "test/project/ancient/npm-shrinkwrap.json")
+	path = DetectManifest("test/project/source")
+	assert.Equal(t, path, "test/project/source/package.json")
+	path = DetectManifest("test/project/v1")
+	assert.Equal(t, path, "test/project/v1/package-lock.json")
+	path = DetectManifest("test/project/v2")
+	assert.Equal(t, path, "test/project/v2/package-lock.json")
+	path = DetectManifest("test/project/future")
+	assert.Equal(t, path, "test/project/future/node_modules/.package-lock.json")
+}
+
 func TestParseManifestV2(t *testing.T) {
 	// This file should exist
 	data, err := ReadManifest("test/package-lock-v2.json")
@@ -36,5 +49,4 @@ func TestParseManifestV2(t *testing.T) {
 	assert.Equal(t, lock.Packages["node_modules/babylon"].Bin["babylon"], "bin/babylon.js")
 	assert.False(t, lock.Packages["node_modules/call-bind"].Dev)
 	assert.True(t, lock.Packages["node_modules/core-js"].HasInstallScript)
-
 }
