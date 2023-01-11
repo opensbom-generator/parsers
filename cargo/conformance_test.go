@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2023 The Linux Foundation and its contributors
 
 package cargo
 
@@ -10,7 +11,7 @@ import (
 
 func TestGetRootModule(t *testing.T) {
 	mod := New()
-	pkg, err := mod.GetRootModule("./test_data/")
+	pkg, err := mod.GetRootModule("./testdata/")
 	require.NoError(t, err)
 	require.NotNil(t, pkg)
 	require.Equal(t, "hello-server", pkg.Name)
@@ -21,7 +22,7 @@ func TestGetRootModule(t *testing.T) {
 func TestGetMetadata(t *testing.T) {
 	mod := New()
 
-	err := mod.SetRootModule("./test_data/")
+	err := mod.SetRootModule("./testdata/")
 	metadata := mod.GetMetadata()
 	require.NoError(t, err)
 	require.NotNil(t, metadata)
@@ -30,14 +31,14 @@ func TestGetMetadata(t *testing.T) {
 }
 func TestListUsedModules(t *testing.T) {
 	mod := New()
-	mods, err := mod.ListUsedModules("./test_data/")
+	mods, err := mod.ListUsedModules("./testdata/")
 	require.NoError(t, err)
 	require.Len(t, mods, 3, "No jala salieron %s", len(mods))
 }
 
 func TestListModulesWithDeps(t *testing.T) {
 	mod := New()
-	mods, err := mod.ListModulesWithDeps("./test_data/", "")
+	mods, err := mod.ListModulesWithDeps("./testdata/", "")
 	require.NoError(t, err)
 	require.Len(t, mods, 3, len(mods))
 	for _, p := range mods {

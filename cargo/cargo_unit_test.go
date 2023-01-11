@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2023 The Linux Foundation and its contributors
 
 package cargo
 
@@ -11,7 +12,7 @@ import (
 
 func TestReadLockFile(t *testing.T) {
 	sut := defaultImplementation{}
-	lock, err := sut.ReadLockFile("test_data")
+	lock, err := sut.ReadLockFile("testdata")
 	require.NoError(t, err)
 	require.NotNil(t, lock)
 	require.Len(t, lock.Packages, 70)
@@ -29,7 +30,7 @@ func TestReadLockFile(t *testing.T) {
 
 func TestReadConfigFile(t *testing.T) {
 	sut := defaultImplementation{}
-	conf, err := sut.ReadConfig("test_data/Cargo.toml")
+	conf, err := sut.ReadConfig("testdata/Cargo.toml")
 	require.NoError(t, err)
 	require.NotNil(t, conf)
 	require.Len(t, conf.Dependencies, 3)
@@ -42,16 +43,16 @@ func TestReadConfigFile(t *testing.T) {
 
 func TestGetCargoMetadata(t *testing.T) {
 	sut := defaultImplementation{}
-	data, err := sut.GetCargoMetadata("test_data")
+	data, err := sut.GetCargoMetadata("testdata")
 	require.NoError(t, err)
 	require.NotNil(t, data)
 	require.Len(t, data.Packages, 56)
-	require.True(t, strings.HasSuffix(data.WorkspaceRoot, "cargo/test_data"))
+	require.True(t, strings.HasSuffix(data.WorkspaceRoot, "cargo/testdata"))
 }
 
 func TestGetRootProjectName(t *testing.T) {
 	sut := defaultImplementation{}
-	name, err := sut.GetRootProjectName("test_data")
+	name, err := sut.GetRootProjectName("testdata")
 	require.NoError(t, err)
 	require.NotEmpty(t, name)
 	require.Equal(t, "hello-server", name)
