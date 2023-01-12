@@ -5,29 +5,32 @@ package npm
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
-// List of known manifest files in order of priority
-var manifests = []string{"package-lock.json",
-	"node_modules/.package-lock.json",
-	"package.json",
-	"npm-shrinkwrap.json",
+// Map of known manifest files in order of priority
+// with an indicator for version matching
+var manifests = map[string]string{
+	"package-lock.json":               "multiple",
+	"node_modules/.package-lock.json": "multiple",
+	"package.json":                    "default",
+	"npm-shrinkwrap.json":             "ancient",
 }
 
 // detectManifest detects what kind of manifest exists in the
 // provided path
-// and returns the path to the manifest that exists
-func DetectManifest(path string) string {
-	for i := range manifests {
-		fullPath := filepath.Join(path, manifests[i])
+// and returns the path to the manifest that exists along with the
+// type of manifest
+func DetectManifest(path string) (string, string, string) {
+	for manifestFile, manifestType := range manifests {
+		fullPath := filepath.Join(path, manifestFile)
 		if _, err := os.Stat(fullPath); err == nil {
-			return fullPath
+			return fullPath, manifestFile, manifestType
 		}
 	}
-	return ""
+	return "", "", ""
 }
 
 // ReadManifest will read a JSON file and unmarshall the data
@@ -41,7 +44,7 @@ func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 	}
 	err = json.Unmarshal(content, &data)
 	if err != nil {
-		return nil, errors.New("cannot unmarshal JSON data")
+		return nil, fmt.Errorf("cannot unmarshal JSON data: %w", err)
 	}
 	return data, nil
 }
@@ -51,10 +54,10 @@ func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 func ParseManifestV2(data map[string]interface{}) (PackageLockV2, error) {
 	// PackageV2 and PackageLockV2 come from model.go
 	lock := PackageLockV2{
-		Name: data["name"].(string),
-		Version: data["version"].(string),
+		Name:            data["name"].(string),
+		Version:         data["version"].(string),
 		LockfileVersion: int(data["lockfileVersion"].(float64)),
-		Requires: data["requires"].(bool),
+		Requires:        data["requires"].(bool),
 	}
 	// fill in Packages
 	// For V2 lockfile versions, there is no need to read

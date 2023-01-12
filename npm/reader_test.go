@@ -7,16 +7,26 @@ import (
 )
 
 func TestDetectManifest(t *testing.T) {
-	path := DetectManifest("testdata/project/ancient")
+	path, mFile, mType := DetectManifest("testdata/project/ancient")
 	assert.Equal(t, path, "testdata/project/ancient/npm-shrinkwrap.json")
-	path = DetectManifest("testdata/project/source")
+	assert.Equal(t, mFile, "npm-shrinkwrap.json")
+	assert.Equal(t, mType, "ancient")
+	path, mFile, mType = DetectManifest("testdata/project/source")
 	assert.Equal(t, path, "testdata/project/source/package.json")
-	path = DetectManifest("testdata/project/v1")
+	assert.Equal(t, mFile, "package.json")
+	assert.Equal(t, mType, "default")
+	path, mFile, mType = DetectManifest("testdata/project/v1")
 	assert.Equal(t, path, "testdata/project/v1/package-lock.json")
-	path = DetectManifest("testdata/project/v2")
+	assert.Equal(t, mFile, "package-lock.json")
+	assert.Equal(t, mType, "multiple")
+	path, mFile, mType = DetectManifest("testdata/project/v2")
 	assert.Equal(t, path, "testdata/project/v2/package-lock.json")
-	path = DetectManifest("testdata/project/future")
+	assert.Equal(t, mFile, "package-lock.json")
+	assert.Equal(t, mType, "multiple")
+	path, mFile, mType = DetectManifest("testdata/project/future")
 	assert.Equal(t, path, "testdata/project/future/node_modules/.package-lock.json")
+	assert.Equal(t, mFile, "node_modules/.package-lock.json")
+	assert.Equal(t, mType, "multiple")
 }
 
 func TestParseManifestV2(t *testing.T) {
