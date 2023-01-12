@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright 2023 The Linux Foundation and its contributors
 
 package npm
 
