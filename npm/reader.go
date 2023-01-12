@@ -37,7 +37,7 @@ func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 	var data map[string]interface{}
 	content, err := os.ReadFile(manifestFile)
 	if err != nil {
-		return nil, errors.New("cannot read manifest file")
+		return nil, fmt.Errorf("cannot read manifest file: %w", err)
 	}
 	err = json.Unmarshal(content, &data)
 	if err != nil {
@@ -50,12 +50,12 @@ func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 // a struct representing the NPM v2 lockfile
 func ParseManifestV2(data map[string]interface{}) (PackageLockV2, error) {
 	// PackageV2 and PackageLockV2 come from model.go
-	lock := PackageLockV2{}
-	// fill in Name, Version, LockfileVersion and Requires
-	lock.Name = data["name"].(string)
-	lock.Version = data["version"].(string)
-	lock.LockfileVersion = int(data["lockfileVersion"].(float64))
-	lock.Requires = data["requires"].(bool)
+	lock := PackageLockV2{
+		Name: data["name"].(string),
+		Version: data["version"].(string),
+		LockfileVersion: int(data["lockfileVersion"].(float64)),
+		Requires: data["requires"].(bool),
+	}
 	// fill in Packages
 	// For V2 lockfile versions, there is no need to read
 	// dependencies because those contain an identical
