@@ -5,6 +5,7 @@ package npm
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,6 +48,20 @@ func ReadManifest(manifestFile string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("cannot unmarshal JSON data: %w", err)
 	}
 	return data, nil
+}
+
+// ParseManifest calls the required parse function for the manifest type
+func ParseManifest(data map[string]interface{}, mType string) (interface{}, error) {
+	switch mType {
+	case "multiple":
+		// for now, we are only expecting the v2 lockfile
+		lock, err := ParseManifestV2(data)
+		return lock, err
+	default:
+		return nil, errors.New("unsupported manifest type")
+
+	}
+
 }
 
 // ParseManifestV2 converts a map[string]interface{} object into

@@ -60,3 +60,11 @@ func TestParseManifestV2(t *testing.T) {
 	assert.False(t, lock.Packages["node_modules/call-bind"].Dev)
 	assert.True(t, lock.Packages["node_modules/core-js"].HasInstallScript)
 }
+
+func TestParseManifest(t *testing.T) {
+	// This file should be the lock version V2
+	data, _ := ReadManifest("testdata/package-lock-v2.json")
+	lock, err := ParseManifest(data, "multiple")
+	assert.Nil(t, err)
+	assert.NotNil(t, lock)
+}
