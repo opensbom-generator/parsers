@@ -111,13 +111,40 @@ func (c *Checksum) Compute(content []byte) string {
 type HashAlgorithm string
 
 const (
-	HashAlgoSHA1   HashAlgorithm = "SHA1"
-	HashAlgoSHA224 HashAlgorithm = "SHA224"
-	HashAlgoSHA256 HashAlgorithm = "SHA256"
-	HashAlgoSHA384 HashAlgorithm = "SHA384"
-	HashAlgoSHA512 HashAlgorithm = "SHA512"
-	HashAlgoMD2    HashAlgorithm = "MD2"
-	HashAlgoMD4    HashAlgorithm = "MD4"
-	HashAlgoMD5    HashAlgorithm = "MD5"
-	HashAlgoMD6    HashAlgorithm = "MD6"
+	HashAlgoSHA1        HashAlgorithm = "SHA1"
+	HashAlgoSHA224      HashAlgorithm = "SHA224"
+	HashAlgoSHA256      HashAlgorithm = "SHA256"
+	HashAlgoSHA384      HashAlgorithm = "SHA384"
+	HashAlgoSHA512      HashAlgorithm = "SHA512"
+	HashAlgoMD2         HashAlgorithm = "MD2"
+	HashAlgoMD4         HashAlgorithm = "MD4"
+	HashAlgoMD5         HashAlgorithm = "MD5"
+	HashAlgoMD6         HashAlgorithm = "MD6"
+	HashAlgoUnsupported HashAlgorithm = "unsupported"
 )
+
+// GetHashAlgorithm takes a string and returns a HashAlgorithm type
+func GetHashAlgorithm(h string) HashAlgorithm {
+	switch u := strings.ToUpper(h); u {
+	case "SHA1":
+		return HashAlgoSHA1
+	case "SHA224":
+		return HashAlgoSHA224
+	case "SHA256":
+		return HashAlgoSHA256
+	case "SHA384":
+		return HashAlgoSHA384
+	case "SHA512":
+		return HashAlgoSHA512
+	case "MD2":
+		return HashAlgoMD2
+	case "MD4":
+		return HashAlgoMD2
+	case "MD5":
+		return HashAlgoMD5
+	case "MD6":
+		return HashAlgoMD6
+	default:
+		return HashAlgoUnsupported
+	}
+}
