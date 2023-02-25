@@ -105,7 +105,7 @@ func NewPypiPackageDataFactory(client *helper.Client) PypiPackageDataFactory {
 func (pf *pypiPackageDataFactory) GetPackageData(packageJSONURL string) (PypiPackageData, error) {
 	packageInfo := PypiPackageData{}
 
-	packageJSONURL = strings.Replace(packageJSONURL, "pypi.org", "", 1)
+	packageJSONURL = strings.ReplaceAll(packageJSONURL, "pypi.org", "")
 	response, err := pf.client.HTTP.Get(fmt.Sprintf("%s%s", pf.client.BaseURL, packageJSONURL))
 	if err != nil {
 		return packageInfo, err
