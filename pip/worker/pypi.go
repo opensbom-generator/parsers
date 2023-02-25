@@ -5,11 +5,13 @@ package worker
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 )
 
@@ -82,31 +84,35 @@ var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
 	meta.HashAlgoMD2,
 }
 
-func makeGetRequest(packageJSONURL string) (*http.Response, error) {
-	url := "https://" + packageJSONURL
+type pypiPackageDataFactory struct {
+	client *helper.Client
+}
 
-	request, _ := http.NewRequest("GET", url, nil)
-	request.Header.Set("Accept", "application/json")
+type PypiPackageDataFactory interface {
+	GetPackageData(packageJSONURL string) (PypiPackageData, error)
+	GetMaintainerData(pkgData PypiPackageData) (string, string)
+	GetChecksum(pkgData PypiPackageData, metadata Metadata) *meta.Checksum
+	GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string
+}
 
-	client := &http.Client{}
-	response, err := client.Do(request)
+// NewPypiPackageDataFactory ...
+func NewPypiPackageDataFactory(client *helper.Client) PypiPackageDataFactory {
+	return &pypiPackageDataFactory{
+		client: client,
+	}
+}
+
+func (pf *pypiPackageDataFactory) GetPackageData(packageJSONURL string) (PypiPackageData, error) {
+	packageInfo := PypiPackageData{}
+
+	packageJSONURL = strings.Replace(packageJSONURL, "pypi.org", "", 1)
+	response, err := pf.client.HTTP.Get(fmt.Sprintf("%s%s", pf.client.BaseURL, packageJSONURL))
 	if err != nil {
-		return nil, err
+		return packageInfo, err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errorPypiCouldNotFetchPkgData
-	}
-
-	return response, err
-}
-
-func GetPackageDataFromPyPi(packageJSONURL string) (PypiPackageData, error) {
-	packageInfo := PypiPackageData{}
-
-	response, err := makeGetRequest(packageJSONURL)
-	if err != nil {
-		return packageInfo, err
+		return packageInfo, errorPypiCouldNotFetchPkgData
 	}
 	defer response.Body.Close()
 
@@ -119,7 +125,7 @@ func GetPackageDataFromPyPi(packageJSONURL string) (PypiPackageData, error) {
 	return packageInfo, nil
 }
 
-func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, string) {
+func (pf *pypiPackageDataFactory) GetMaintainerData(pkgData PypiPackageData) (string, string) {
 	var name string
 	var email string
 	if len(pkgData.Info.Maintainer) > 0 {
@@ -131,7 +137,79 @@ func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, strin
 	return name, email
 }
 
-func GetHighestOrderHashData(digests DigestTypes) (meta.HashAlgorithm, string) {
+func (pf *pypiPackageDataFactory) GetChecksum(pkgData PypiPackageData, metadata Metadata) *meta.Checksum {
+	checksum := meta.Checksum{
+		Algorithm: meta.HashAlgoSHA1,
+		Content:   []byte(pkgData.Info.Name),
+	}
+
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := getPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			algo, value := getHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+
+		distInfo, status = getPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			algo, value := getHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+	}
+
+	return &checksum
+}
+
+func (pf *pypiPackageDataFactory) GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string {
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := getPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			return distInfo.URL
+		}
+
+		distInfo, status = getPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			return distInfo.URL
+		}
+	}
+
+	return ""
+}
+
+func getPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string,
+	tag string, cpVersion string) (PypiPackageDistInfo, bool) {
+	PackageType := strings.EqualFold(distInfo.PackageType, generator)
+	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
+	CPVersion := strings.EqualFold(distInfo.PythonVersion, cpVersion)
+	Py2Py3 := strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion))
+
+	status := false
+
+	if PackageType && Tag && (CPVersion || Py2Py3) {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func getPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
+	PackageType := strings.EqualFold(distInfo.PackageType, generator)
+	Source := strings.EqualFold(distInfo.PythonVersion, "source")
+
+	status := false
+
+	if PackageType && Source {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func getHighestOrderHashData(digests DigestTypes) (meta.HashAlgorithm, string) {
 	var algoType meta.HashAlgorithm
 	var digestValue string
 
@@ -146,75 +224,4 @@ func GetHighestOrderHashData(digests DigestTypes) (meta.HashAlgorithm, string) {
 	}
 
 	return algoType, digestValue
-}
-
-func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, tag string, cpversion string) (PypiPackageDistInfo, bool) {
-	PackageType := strings.EqualFold(distInfo.PackageType, generator)
-	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
-	CPVersion := strings.EqualFold(distInfo.PythonVersion, cpversion)
-	Py2Py3 := strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion))
-
-	status := false
-
-	if PackageType && Tag && (CPVersion || Py2Py3) {
-		status = true
-	}
-
-	return distInfo, status
-}
-
-func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
-	PackageType := strings.EqualFold(distInfo.PackageType, generator)
-	Source := strings.EqualFold(distInfo.PythonVersion, "source")
-
-	status := false
-
-	if PackageType && Source {
-		status = true
-	}
-
-	return distInfo, status
-}
-
-func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *meta.Checksum {
-	checksum := meta.Checksum{
-		Algorithm: meta.HashAlgoSHA1,
-		Content:   []byte(pkgData.Info.Name),
-	}
-
-	for _, packageDistInfo := range pkgData.Urls {
-		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
-		if status {
-			algo, value := GetHighestOrderHashData(distInfo.Digests)
-			checksum.Algorithm = algo
-			checksum.Value = value
-			return &checksum
-		}
-
-		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
-		if status {
-			algo, value := GetHighestOrderHashData(distInfo.Digests)
-			checksum.Algorithm = algo
-			checksum.Value = value
-			return &checksum
-		}
-	}
-
-	return &checksum
-}
-
-func GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string {
-	for _, packageDistInfo := range pkgData.Urls {
-		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
-		if status {
-			return distInfo.URL
-		}
-
-		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
-		if status {
-			return distInfo.URL
-		}
-	}
-
-	return ""
 }
