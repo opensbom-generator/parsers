@@ -20,7 +20,6 @@ const (
 	placeholderPkgName  = "{PACKAGE}"
 	packageSrcLocation  = "/src/"
 	packageSiteLocation = "/site-packages"
-	pypiURL             = "https://pypi.org"
 )
 
 var (
@@ -114,7 +113,7 @@ func (m *PipEnv) ListUsedModules(path string) ([]meta.Package, error) {
 		return m.allModules, errFailedToConvertModules
 	}
 
-	pypiDataFactory := worker.NewPypiPackageDataFactory(helper.NewClient(pypiURL))
+	pypiDataFactory := worker.NewPypiPackageDataFactory(helper.NewClient(worker.PyPiURL))
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails, pypiDataFactory)
 	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
 	if err != nil {

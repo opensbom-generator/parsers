@@ -17,6 +17,7 @@ import (
 
 var (
 	errorPypiCouldNotFetchPkgData = errors.New("could not fetch package data from PyPI")
+	PyPiURL                       = "https://pypi.org"
 )
 
 type PypiPackageData struct {

@@ -36,6 +36,7 @@ type Poetry struct {
 	pkgs       []worker.Packages
 	metainfo   map[string]worker.Metadata
 	allModules []meta.Package
+	pf         worker.PypiPackageDataFactory
 }
 
 // New ...
@@ -47,6 +48,7 @@ func New() *Poetry {
 			Manifest:   []string{manifestLockFile},
 			ModulePath: []string{},
 		},
+		pf: worker.NewPypiPackageDataFactory(helper.NewClient(worker.PyPiURL)),
 	}
 }
 
@@ -111,7 +113,7 @@ func (m *Poetry) ListUsedModules(path string) ([]meta.Package, error) {
 		return m.allModules, errFailedToConvertModules
 	}
 
-	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+	decoder := worker.NewMetadataDecoder(m.GetPackageDetails, m.pf)
 	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
 	if err != nil {
 		return m.allModules, err
