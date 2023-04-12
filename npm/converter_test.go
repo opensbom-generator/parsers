@@ -27,3 +27,16 @@ func TestPackageV2ToMeta(t *testing.T) {
 	assert.Equal(t, pkg.Checksum.Algorithm, meta.HashAlgoSHA512)
 	assert.Equal(t, pkg.PackageDownloadLocation, "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.1.1.tgz")
 }
+
+func TestRootPackageV2ToMeta(t *testing.T) {
+	// parse existing package lock v2 file
+	data, _ := ReadManifest("testdata/package-lock-v2.json")
+	lock, _ := ParseManifestV2(data)
+	pkg, err := RootPackageV2ToMeta(lock.RootPackage)
+	assert.Nil(t, err)
+	assert.Equal(t, pkg.Name, "e-commerce")
+	assert.Equal(t, pkg.Version, "1.0.0")
+	assert.Equal(t, pkg.LicenseDeclared, "ISC")
+	assert.Equal(t, pkg.Supplier.Name, "")
+	assert.NotNil(t, pkg.Checksum)
+}

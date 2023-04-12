@@ -60,3 +60,30 @@ func PackageV2ToMeta(name string, p PackageV2) (*meta.Package, error) {
 	}
 	return &m, nil
 }
+
+// RootPackageV2ToMeta takes a RootPackageV2 object
+// and returns a meta Package object.
+func RootPackageV2ToMeta(p RootPackageV2) (*meta.Package, error) {
+	m := meta.Package{
+		Version: p.Version,
+		Name:    p.Name,
+		// Path
+		// Local Path
+		Supplier: meta.Supplier{}, //NPM lock files don't have a supplier
+		// PackageURL
+		// npm root package does not have a checksum
+		// so we will calculate a SHA512
+		Checksum: meta.Checksum{Algorithm: meta.HashAlgoSHA512},
+		// PackageHomePage
+		// PackageDownloadLocation
+		// LicenseConcluded
+		LicenseDeclared: p.License,
+		// CommentsLicense
+		// OtherLicense
+		// Copyright
+		// PackageComment
+		Root: true,
+		// Packages
+	}
+	return &m, nil
+}
