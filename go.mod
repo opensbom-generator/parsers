@@ -7,7 +7,7 @@ require (
 	github.com/go-git/go-git/v5 v5.6.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.1
 	github.com/pelletier/go-toml/v2 v2.0.7
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.2
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.2
 	github.com/vifraa/gopom v0.2.1
