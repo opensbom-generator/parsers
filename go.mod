@@ -9,7 +9,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.7
 	github.com/sirupsen/logrus v1.9.2
 	github.com/spdx/spdx-sbom-generator v0.0.15
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/vifraa/gopom v0.2.1
 	golang.org/x/mod v0.10.0
 	sigs.k8s.io/release-utils v0.7.4
