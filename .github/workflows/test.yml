@@ -18,11 +18,11 @@ jobs:
           go-version: 1.19
           check-latest: true
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c
           with:
             node-version: 18.16.0
       - name: Install dependencies with yarn
-        uses: borales/actions-yarn@v4
+        uses: borales/actions-yarn@97ba8bebfe5b549bb7999261698a52a81fd62f1b
         with:
           cmd: install
           dir: 'parsers/parsers/yarn'
