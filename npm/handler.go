@@ -370,7 +370,13 @@ func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}
 		if m == nil {
 			m = make(map[string]interface{})
 		}
-		m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+		if version, ok := dv.(string); ok {
+			m[version] = map[string]interface{}{}
+		}
+
+		if dep, ok := dv.(map[string]interface{}); ok {
+			m[dep["version"].(string)] = dv.(map[string]interface{})
+		}
 		allDeps[dk] = m
 	}
 }
