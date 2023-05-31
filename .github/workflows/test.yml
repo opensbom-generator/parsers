@@ -36,6 +36,7 @@ jobs:
           cmd: install
           dir: 'yarn/test'
       - name: Run swift build
+        working-directory: 'swift/test'
         run: swift build
 
       - run: go test -v ./...
