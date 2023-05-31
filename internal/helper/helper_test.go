@@ -14,7 +14,7 @@ import (
 )
 
 func TestGetCopyright(t *testing.T) {
-	licensePath := filepath.Join(getPath(), "..", "modules", "npm", "test", "node_modules", "bcryptjs", "LICENSE")
+	licensePath := filepath.Join(getPath(), "..", "..", "npm", "test", "node_modules", "bcryptjs", "LICENSE")
 	r := reader.New(licensePath)
 	s := r.StringFromFile()
 	res := GetCopyright(s)
