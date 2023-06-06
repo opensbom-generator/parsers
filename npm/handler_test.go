@@ -131,8 +131,8 @@ func TestListAllModules(t *testing.T) {
 		if mod.Name == "body-parser" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
-			assert.Equal(t, "1.19.0", mod.Version)
-			assert.Equal(t, "https://registry.npmjs.org/body-parser/-/body-parser-1.19.0.tgz", mod.PackageDownloadLocation)
+			assert.Equal(t, "1.20.2", mod.Version)
+			assert.Equal(t, "https://registry.npmjs.org/body-parser/-/body-parser-1.20.2.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, meta.HashAlgorithm("SHA256"), mod.Checksum.Algorithm)
 			assert.Equal(t, h, mod.Checksum.Value)
 			assert.Equal(t, "Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>", mod.Copyright)

@@ -14,13 +14,13 @@ import (
 )
 
 func TestGetCopyright(t *testing.T) {
-	licensePath := filepath.Join(getPath(), "..", "modules", "npm", "test", "node_modules", "bcryptjs", "LICENSE")
+	licensePath := filepath.Join(getPath(), "..", "..", "npm", "test", "node_modules", "bcryptjs", "LICENSE")
 	r := reader.New(licensePath)
 	s := r.StringFromFile()
 	res := GetCopyright(s)
 	assert.Equal(t, "Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com>", res)
 
-	licensePath2 := filepath.Join(getPath(), "..", "modules", "npm", "test", "node_modules", "shortid", "LICENSE")
+	licensePath2 := filepath.Join(getPath(), "..", "..", "npm", "test", "node_modules", "shortid", "LICENSE")
 	r = reader.New(licensePath2)
 	s = r.StringFromFile()
 	res = GetCopyright(s)
