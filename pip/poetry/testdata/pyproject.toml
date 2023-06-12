@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "testdata"
+version = "0.1.0"
+description = ""
+authors = ["Rahul Tiwari <jprrahultiwari@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.93.0"
+cryptography = "^39.0.2"
+uvicorn = "^0.21.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
