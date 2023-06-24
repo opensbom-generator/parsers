@@ -138,7 +138,7 @@ func IsRootModule(pkg Packages, pipType string) bool {
 			return true
 		}
 	case (os == osWin || os == osLinux || os == osDarwin) && pipType == poetry:
-		if pkg.Installer == poetry {
+		if strings.Contains(strings.ToLower(pkg.Installer), poetry) {
 			return true
 		}
 	default:
