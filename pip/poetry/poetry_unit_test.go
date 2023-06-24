@@ -3,6 +3,7 @@ package poetry
 import (
 	"testing"
 
+	"github.com/opensbom-generator/parsers/meta"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,6 +39,31 @@ func TestGetMetadata(t *testing.T) {
 	assert.Equal(t, "poetry", metadata.Slug)
 	assert.Equal(t, []string{"poetry.lock"}, metadata.Manifest)
 	assert.Equal(t, []string{}, metadata.ModulePath)
+}
+
+func TestHasModulesInstalled(t *testing.T) {
+	for _, tc := range map[string]struct {
+		poetry     *Poetry
+		path       string
+		modulesLen int
+		err        error
+	}{
+		"valid directory, should return nil err": {
+			poetry:     setupPoetry(t, testDataPath),
+			path:       testDataPath,
+			modulesLen: 16,
+			err:        nil,
+		},
+		"invalid directory, should return errDependenciesNotFound": {
+			poetry:     setupPoetry(t, "invalid"),
+			path:       "invalid",
+			modulesLen: 0,
+			err:        errDependenciesNotFound,
+		},
+	} {
+		err := tc.poetry.HasModulesInstalled(tc.path)
+		assert.ErrorIs(t, err, tc.err)
+	}
 }
 
 func TestListUsedModules(t *testing.T) {
@@ -94,4 +120,28 @@ func TestGetPackageDetails(t *testing.T) {
 		}
 		assert.Contains(t, packageDetails, tc.packageVersion)
 	}
+}
+
+func TestGetRootModule(t *testing.T) {
+	poetry := setupPoetry(t, testDataPath)
+
+	// ListUsedModules needs to be called because it sets m.allModules
+	_, err := poetry.ListUsedModules(testDataPath)
+	require.NoError(t, err)
+
+	metadata, err := poetry.GetRootModule(testDataPath)
+	require.NoError(t, err)
+
+	assert.True(t, metadata.Root)
+	assert.Equal(t, "anyio", metadata.Name)
+	assert.Equal(t, "3.6.2", metadata.Version)
+	assert.Equal(t, "pypi.org/pypi/anyio", metadata.Path)
+	assert.Equal(t, "pypi.org/pypi/anyio/3.6.2", metadata.PackageURL)
+	assert.Equal(t, meta.Checksum{
+		Algorithm: meta.HashAlgoSHA256,
+		Content:   []byte{97, 110, 121, 105, 111},
+		Value:     "fbbe32bd270d2a2ef3ed1c5d45041250284e31fc0a4df4a5a6071842051a51e3",
+	}, metadata.Checksum)
+	assert.Equal(t, "MIT", metadata.LicenseDeclared)
+	assert.Equal(t, "MIT", metadata.LicenseConcluded)
 }
