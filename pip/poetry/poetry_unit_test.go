@@ -43,22 +43,19 @@ func TestGetMetadata(t *testing.T) {
 
 func TestHasModulesInstalled(t *testing.T) {
 	for _, tc := range map[string]struct {
-		poetry     *Poetry
-		path       string
-		modulesLen int
-		err        error
+		poetry *Poetry
+		path   string
+		err    error
 	}{
 		"valid directory, should return nil err": {
-			poetry:     setupPoetry(t, testDataPath),
-			path:       testDataPath,
-			modulesLen: 16,
-			err:        nil,
+			poetry: setupPoetry(t, testDataPath),
+			path:   testDataPath,
+			err:    nil,
 		},
 		"invalid directory, should return errDependenciesNotFound": {
-			poetry:     setupPoetry(t, "invalid"),
-			path:       "invalid",
-			modulesLen: 0,
-			err:        errDependenciesNotFound,
+			poetry: setupPoetry(t, "invalid"),
+			path:   "invalid",
+			err:    errDependenciesNotFound,
 		},
 	} {
 		err := tc.poetry.HasModulesInstalled(tc.path)
