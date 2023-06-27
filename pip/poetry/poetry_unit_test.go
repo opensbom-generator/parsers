@@ -18,6 +18,26 @@ func setupPoetry(t *testing.T, path string) *Poetry {
 	return poetry
 }
 
+func TestIsValid(t *testing.T) {
+	poetry := New()
+	for _, tc := range map[string]struct {
+		path          string
+		shouldBeValid bool
+	}{
+		"valid directory, should be valid": {
+			path:          testDataPath,
+			shouldBeValid: true,
+		},
+		"invalid directory, should be invalid": {
+			path:          "invalid",
+			shouldBeValid: false,
+		},
+	} {
+		ok := poetry.IsValid(tc.path)
+		assert.Equal(t, tc.shouldBeValid, ok)
+	}
+}
+
 func TestSetRootModule(t *testing.T) {
 	poetry := New()
 	err := poetry.SetRootModule(testDataPath)
