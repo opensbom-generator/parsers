@@ -35,6 +35,9 @@ jobs:
         uses: abatilo/actions-poetry@192395c0d10c082a7c62294ab5d9a9de40e48974 #v2
         with:
           poetry-version: '1.5.1'
+      - name: Install dependencies with poetry
+        working-directory: 'pip/poetry/testdata'
+        run: poetry install
       - name: Install dependencies with npm
         working-directory: 'npm/test'
         run: npm install
