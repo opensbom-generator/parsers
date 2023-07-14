@@ -6,7 +6,7 @@ require (
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.2
-	github.com/pelletier/go-toml/v2 v2.0.8
+	github.com/pelletier/go-toml/v2 v2.0.9
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.4
