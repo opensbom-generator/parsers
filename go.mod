@@ -10,7 +10,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.4
-	github.com/vifraa/gopom v0.2.1
+	github.com/vifraa/gopom v0.2.2
 	golang.org/x/mod v0.11.0
 	sigs.k8s.io/release-utils v0.7.4
 )
