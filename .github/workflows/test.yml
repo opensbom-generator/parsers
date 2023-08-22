@@ -4,7 +4,7 @@ name: test
 
 on:
   push:
-    branches: ['main']
+    branches: [ 'main' ]
   pull_request:
 
 jobs:
@@ -46,6 +46,17 @@ jobs:
         with:
           cmd: install
           dir: 'yarn/test'
+      - name: Setup node
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
+        with:
+          node-version: 16.14.0
+      - name: Install dependencies with pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: |
+            - cwd: 'pnpm/test'
+          package_json_file: 'pnpm/test/package.json'
       - name: Run swift build
         working-directory: 'swift/test'
         run: swift build
