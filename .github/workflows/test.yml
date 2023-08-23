@@ -53,6 +53,7 @@ jobs:
       - name: Install dependencies with pnpm
         uses: pnpm/action-setup@v2
         with:
+          # lock file 6.0
           version: 8
           run_install: |
             - cwd: 'pnpm/test'

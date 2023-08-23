@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -287,13 +288,37 @@ func readLockFile(path string) ([]dependency, error) {
 	if err != nil {
 		return nil, err
 	}
+	return readLockData(lockData)
+}
 
+func readLockData(lockData map[string]interface{}) ([]dependency, error) {
 	packages, ok := lockData["packages"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("invalid lock file format")
 	}
 
 	dependencies := make([]dependency, 0)
+
+	lockfileVersion, ok := lockData["lockfileVersion"]
+	if !ok {
+		return nil, errors.New("no lockfileVersion field")
+	}
+	var lockfileVersionNum float64
+	var err error
+	// lockfileVersion can be float64 or string ...
+	// 6.0-, it is float64
+	// 6.0+, it is string ...
+	switch lockfileVersion := lockfileVersion.(type) {
+	case string:
+		lockfileVersionNum, err = strconv.ParseFloat(lockfileVersion, 64)
+		if err != nil {
+			return nil, err
+		}
+	case float64:
+		lockfileVersionNum = lockfileVersion
+	default:
+		return nil, fmt.Errorf("invalid lockfile version type")
+	}
 
 	for pkgName, pkg := range packages {
 		pkgMap, ok := pkg.(map[string]interface{})
@@ -303,7 +328,13 @@ func readLockFile(path string) ([]dependency, error) {
 
 		dep := dependency{}
 
-		name, version, belonging := splitPackageNameAndVersion(pkgName)
+		var name, version, belonging string
+		if lockfileVersionNum > 6.0 {
+			name, version, belonging = splitPackageNameAndVersionV6(pkgName)
+		} else {
+			name, version, belonging = splitPackageNameAndVersionLegacy(pkgName)
+		}
+
 		nameWithoutAt, pkPath, nameAndVersion := processName(name)
 		dep.Name = nameWithoutAt
 		dep.PkPath = pkPath
@@ -380,12 +411,32 @@ func extractVersion(s string) string {
 	return t
 }
 
-func splitPackageNameAndVersion(pkg string) (string, string, string) {
-	// sample input
+func splitPackageNameAndVersionLegacy(pkg string) (string, string, string) {
+	// sample input (lockfile 6.0-
 	// 1. /@byted-cmf/data-plugin-indexeddb-storage-client/2.0.4_e239e53d72e8372ca29c63c7108bdc0f
 	// 2. /esprima/1.2.5
 	// 3. /@dp/sirius-view/3.7.131
 	// 4. /@babel/plugin-syntax-json-strings/7.8.3_@babel+core@7.15.0
+
+	parts := strings.Split(pkg, "_")
+	belonging := ""
+	if len(parts) > 1 {
+		belonging = strings.Join(parts[1:], "_")
+	}
+	pkgPure := strings.TrimSuffix(pkg, fmt.Sprintf("_%s", belonging))
+
+	pkgParts := strings.Split(pkgPure, "/")
+	version := pkgParts[len(pkgParts)-1]
+	name := strings.Join(pkgParts[:len(pkgParts)-1], "/")
+	name = strings.TrimLeft(name, "/")
+	return name, version, belonging
+}
+
+func splitPackageNameAndVersionV6(pkg string) (string, string, string) {
+	// sample input (lockfile 6.0+
+	// 1. /@babel/code-frame@7.22.10
+	// 2. /@babel/helper-create-regexp-features-plugin@7.22.9(@babel/core@7.22.10)
+	// 3. /safe-buffer@5.1.2
 
 	// Remove parentheses and content inside
 	parts := strings.Split(pkg, "(")
