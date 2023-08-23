@@ -102,6 +102,7 @@ func (m *Yarn) GetRootModule(path string) (*meta.Package, error) {
 		return &meta.Package{}, err
 	}
 	mod := &meta.Package{}
+	mod.Root = true
 
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)

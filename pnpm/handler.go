@@ -103,6 +103,7 @@ func (m *Pnpm) GetRootModule(path string) (*meta.Package, error) {
 		return &meta.Package{}, err
 	}
 	mod := &meta.Package{}
+	mod.Root = true
 
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
@@ -380,6 +381,12 @@ func extractVersion(s string) string {
 }
 
 func splitPackageNameAndVersion(pkg string) (string, string, string) {
+	// sample input
+	// 1. /@byted-cmf/data-plugin-indexeddb-storage-client/2.0.4_e239e53d72e8372ca29c63c7108bdc0f
+	// 2. /esprima/1.2.5
+	// 3. /@dp/sirius-view/3.7.131
+	// 4. /@babel/plugin-syntax-json-strings/7.8.3_@babel+core@7.15.0
+
 	// Remove parentheses and content inside
 	parts := strings.Split(pkg, "(")
 	pkg = parts[0]
