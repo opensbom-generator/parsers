@@ -51,7 +51,7 @@ func TestGetModule(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "create-react-app-lambda", mod.Name)
-	assert.Equal(t, "", mod.Supplier.Name)
+	assert.Equal(t, "create-react-app-lambda", mod.Supplier.Name)
 	assert.Equal(t, "0.5.0", mod.Version)
 }
 

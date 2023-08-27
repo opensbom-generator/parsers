@@ -109,12 +109,14 @@ func (m *Pnpm) GetRootModule(path string) (*meta.Package, error) {
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
 	}
-	if pkResult["author"] != nil {
-		mod.Supplier.Name = pkResult["author"].(string)
-	}
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
+	mod.Supplier = meta.Supplier{
+		Type: meta.Organization,
+		Name: mod.Name,
+	}
+
 	repository := pkResult["repository"]
 	if repository != nil {
 		if rep, ok := repository.(string); ok {
@@ -187,7 +189,6 @@ func (m *Pnpm) buildDependencies(path string, deps []dependency) ([]meta.Package
 		Algorithm: "SHA256",
 		Value:     h,
 	}
-	de.Supplier.Name = de.Name
 	if de.PackageDownloadLocation == "" {
 		de.PackageDownloadLocation = de.Name
 	}
@@ -222,7 +223,13 @@ func (m *Pnpm) buildDependencies(path string, deps []dependency) ([]meta.Package
 			}
 		}
 		mod.PackageDownloadLocation = strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
-		mod.Supplier.Name = mod.Name
+		mod.Supplier = meta.Supplier{
+			Type: meta.Organization,
+			Name: mod.Name,
+		}
+		if mod.Name == "" {
+			mod.Supplier.Name = de.Name
+		}
 
 		mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, m.metadata.Manifest[0]))
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
