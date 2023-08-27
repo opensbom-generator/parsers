@@ -100,8 +100,8 @@ func TestListAllModules(t *testing.T) {
 	for _, mod := range mods {
 		if mod.Name == "axios" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
-			assert.Equal(t, "0.19.0", mod.Version)
-			assert.Equal(t, "https://registry.npmjs.org/axios/-/axios-0.19.0.tgz", mod.PackageDownloadLocation)
+			assert.Equal(t, "0.19.2", mod.Version)
+			assert.Equal(t, "https://registry.npmjs.org/axios/-/axios-0.19.2.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, meta.HashAlgorithm("SHA256"), mod.Checksum.Algorithm)
 			assert.Equal(t, h, mod.Checksum.Value)
 			assert.Equal(t, "Copyright (c) 2014-present Matt Zabriskie", mod.Copyright)
@@ -116,8 +116,8 @@ func TestListAllModules(t *testing.T) {
 			}
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
-			assert.Equal(t, "16.8.6", mod.Version)
-			assert.Equal(t, "https://registry.npmjs.org/react/-/react-16.8.6.tgz", mod.PackageDownloadLocation)
+			assert.Equal(t, "16.14.0", mod.Version)
+			assert.Equal(t, "https://registry.npmjs.org/react/-/react-16.14.0.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, meta.HashAlgorithm("SHA256"), mod.Checksum.Algorithm)
 			assert.Equal(t, h, mod.Checksum.Value)
 			assert.Equal(t, "Copyright (c) Facebook, Inc. and its affiliates.", mod.Copyright)
@@ -128,8 +128,8 @@ func TestListAllModules(t *testing.T) {
 		if mod.Name == "react-dom" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
-			assert.Equal(t, "16.8.6", mod.Version)
-			assert.Equal(t, "https://registry.npmjs.org/react-dom/-/react-dom-16.8.6.tgz", mod.PackageDownloadLocation)
+			assert.Equal(t, "16.14.0", mod.Version)
+			assert.Equal(t, "https://registry.npmjs.org/react-dom/-/react-dom-16.14.0.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, meta.HashAlgorithm("SHA256"), mod.Checksum.Algorithm)
 			assert.Equal(t, h, mod.Checksum.Value)
 			assert.Equal(t, "Copyright (c) Facebook, Inc. and its affiliates.", mod.Copyright)

@@ -336,7 +336,7 @@ func readLockData(lockData map[string]interface{}) ([]dependency, error) {
 		dep := dependency{}
 
 		var name, version, belonging string
-		if lockfileVersionNum > 6.0 {
+		if lockfileVersionNum >= 6.0 {
 			name, version, belonging = splitPackageNameAndVersionV6(pkgName)
 		} else {
 			name, version, belonging = splitPackageNameAndVersionLegacy(pkgName)
