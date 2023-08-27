@@ -192,6 +192,7 @@ func (m *NPM) buildDependencies(path string, deps map[string]interface{}) ([]met
 	if err != nil {
 		return modules, err
 	}
+	de.Root = true
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
 	de.Checksum = meta.Checksum{
 		Algorithm: "SHA256",
