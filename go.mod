@@ -11,7 +11,7 @@ require (
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.4
 	github.com/vifraa/gopom v0.2.1
-	golang.org/x/mod v0.12.0
+	golang.org/x/mod v0.13.0
 	sigs.k8s.io/release-utils v0.7.4
 )
 
@@ -42,12 +42,12 @@ require (
 	github.com/shogo82148/go-shuffle v1.0.1 // indirect
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/exp v0.0.0-20221006183845-316c7553db56 // indirect
-	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
-	golang.org/x/tools v0.9.3 // indirect
+	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	gonum.org/v1/gonum v0.8.2 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
