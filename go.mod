@@ -5,14 +5,14 @@ go 1.19
 require (
 	github.com/go-enry/go-license-detector/v4 v4.3.1
 	github.com/go-git/go-git/v5 v5.10.0
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.2
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.7.0
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spdx/spdx-sbom-generator v0.0.15
 	github.com/stretchr/testify v1.8.4
 	github.com/vifraa/gopom v0.2.1
 	golang.org/x/mod v0.12.0
-	sigs.k8s.io/release-utils v0.7.4
+	sigs.k8s.io/release-utils v0.7.7
 )
 
 require (
