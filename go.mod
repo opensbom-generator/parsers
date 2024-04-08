@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vifraa/gopom v0.2.1
 	golang.org/x/mod v0.14.0
-	sigs.k8s.io/release-utils v0.7.4
+	sigs.k8s.io/release-utils v0.8.1
 )
 
 require (
