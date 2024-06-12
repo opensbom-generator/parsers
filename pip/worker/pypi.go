@@ -4,17 +4,18 @@ package worker
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
-	"net/http"
 	"reflect"
 	"strings"
 
+	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
+	"github.com/pkg/errors"
 )
 
-var (
-	errorPypiCouldNotFetchPkgData = errors.New("could not fetch package data from PyPI")
+const (
+	pypiBaseURL                 = "https://pypi.org"
+	errPypiCouldNotFetchPkgData = "could not fetch package data from PyPI"
 )
 
 type PypiPackageData struct {
@@ -82,31 +83,15 @@ var HashAlgoPickOrder []meta.HashAlgorithm = []meta.HashAlgorithm{
 	meta.HashAlgoMD2,
 }
 
-func makeGetRequest(packageJSONURL string) (*http.Response, error) {
-	url := "https://" + packageJSONURL
-
-	request, _ := http.NewRequest("GET", url, nil)
-	request.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, errorPypiCouldNotFetchPkgData
-	}
-
-	return response, err
-}
-
 func GetPackageDataFromPyPi(packageJSONURL string) (PypiPackageData, error) {
+	packageJSONURL = strings.ReplaceAll(packageJSONURL, "pypi.org", "")
 	packageInfo := PypiPackageData{}
 
-	response, err := makeGetRequest(packageJSONURL)
+	client := helper.NewClient(pypiBaseURL)
+
+	response, err := client.Get(packageJSONURL)
 	if err != nil {
-		return packageInfo, err
+		return packageInfo, errors.Wrap(err, errPypiCouldNotFetchPkgData)
 	}
 	defer response.Body.Close()
 
