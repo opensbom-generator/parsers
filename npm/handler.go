@@ -4,16 +4,17 @@ package npm
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-
 	"github.com/opensbom-generator/parsers/internal/helper"
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
-	"github.com/opensbom-generator/parsers/reader"
 )
 
 type NPM struct {
@@ -93,9 +94,16 @@ func (m *NPM) SetRootModule(path string) error {
 
 // GetRootModule return root package information ex. Name, Version
 func (m *NPM) GetRootModule(path string) (*meta.Package, error) {
-	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJSON()
+	// Join the given path with the name of the manifest file.
+	p := filepath.Join(path, m.metadata.Manifest[0])
+	// Read the contents of the manifest file.
+	pBytes, err := os.ReadFile(p)
 	if err != nil {
+		return nil, fmt.Errorf("unmarshalling manifest: %w", err)
+	}
+	// Unmarshal the JSON data from the manifest file into a map.
+	pkResult := make(map[string]interface{})
+	if err := json.Unmarshal(pBytes, &pkResult); err != nil {
 		return nil, err
 	}
 	mod := &meta.Package{}
@@ -146,14 +154,32 @@ func (m *NPM) GetRootModule(path string) (*meta.Package, error) {
 
 // ListUsedModules return brief info of installed modules, Name and Version
 func (m *NPM) ListUsedModules(path string) ([]meta.Package, error) {
-	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJSON()
-	if err != nil {
-		return []meta.Package{}, err
-	}
+	
+	// Get the path to the project's manifest file
+	manifestPath := filepath.Join(path, m.metadata.Manifest[0])
 
+	// Open the manifest file
+    manifestFile, err := os.Open(manifestPath)
+    if err != nil {
+        return []meta.Package{}, fmt.Errorf("opening manifest file: %w", err)
+    }
+    defer manifestFile.Close()
+
+	// Read the contents of the manifest file
+    manifestData, err := io.ReadAll(manifestFile)
+    if err != nil {
+        return []meta.Package{}, fmt.Errorf("reading manifest file: %w", err)
+    }
+	// Unmarshal the manifest data into a map
+    var manifestMap map[string]interface{}
+    if err := json.Unmarshal(manifestData, &manifestMap); err != nil {
+        return []meta.Package{}, fmt.Errorf("unmarshalling manifest: %w", err)
+    }
+
+	// Get the dependencies section of the manifest
+	// and extract each package name and version
 	modules := make([]meta.Package, 0)
-	deps := pkResult["dependencies"].(map[string]interface{})
+	deps := manifestMap["dependencies"].(map[string]interface{})
 
 	for k, v := range deps {
 		var mod meta.Package
@@ -162,6 +188,7 @@ func (m *NPM) ListUsedModules(path string) ([]meta.Package, error) {
 		modules = append(modules, mod)
 	}
 
+	// Return the list of dependencies
 	return modules, nil
 }
 
@@ -172,11 +199,18 @@ func (m *NPM) ListModulesWithDeps(path string, globalSettingFile string) ([]meta
 		pk = shrink
 	}
 
-	r := reader.New(filepath.Join(path, pk))
-	pkResults, err := r.ReadJSON()
-	if err != nil {
-		return []meta.Package{}, err
-	}
+	pkPath := filepath.Join(path, pk)
+    pkFile, err := os.Open(pkPath)
+    if err != nil {
+        return []meta.Package{}, err
+    }
+    defer pkFile.Close()
+
+    var pkResults map[string]interface{}
+    err = json.NewDecoder(pkFile).Decode(&pkResults)
+    if err != nil {
+        return []meta.Package{}, err
+    }
 
 	deps, ok := pkResults["packages"].(map[string]interface{})
 	if !ok {
@@ -274,13 +308,21 @@ func (m *NPM) buildDependencies(path string, deps map[string]interface{}) ([]met
 
 func getCopyright(path string) string {
 	licensePath := getLicenseFile(path)
-	if helper.Exists(licensePath) {
-		r := reader.New(licensePath)
-		s := r.StringFromFile()
-		return helper.GetCopyright(s)
+	if _, err := os.Stat(licensePath); os.IsNotExist(err) {
+		return ""
 	}
-
-	return ""
+	// Open the license file
+	licenseFile, err := os.Open(licensePath)
+	if err != nil {
+		return ""
+	}
+	defer licenseFile.Close()
+	// Read the license file data
+	licenseData, err := io.ReadAll(licenseFile)
+	if err != nil {
+		return ""
+	}
+	return helper.GetCopyright(string(licenseData))
 }
 
 func getLicenseFile(path string) string {
@@ -329,16 +371,23 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 }
 
 func getPackageHomepage(path string) string {
-	r := reader.New(path)
-	pkResult, err := r.ReadJSON()
-	if err != nil {
-		return ""
-	}
-	if pkResult["homepage"] != nil {
-		return helper.RemoveURLProtocol(pkResult["homepage"].(string))
-	}
+	file, err := os.Open(path)
+    if err != nil {
+        return ""
+    }
+    defer file.Close()
 
-	return ""
+    var pkResult map[string]interface{}
+    decoder := json.NewDecoder(file)
+    if err = decoder.Decode(&pkResult); err != nil {
+        return ""
+    }
+
+    if pkResult["homepage"] != nil {
+        return helper.RemoveURLProtocol(pkResult["homepage"].(string))
+    }
+
+    return ""
 }
 
 func appendNestedDependencies(deps map[string]interface{}) map[string]map[string]interface{} {
