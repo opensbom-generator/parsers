@@ -43,6 +43,7 @@ type PyEnv struct {
 	metainfo   map[string]worker.Metadata
 	allModules []meta.Package
 	venv       string
+	pf         worker.PypiPackageDataFactory
 }
 
 // New ...
@@ -129,7 +130,7 @@ func (m *PyEnv) ListUsedModules(path string) ([]meta.Package, error) {
 		return m.allModules, errFailedToConvertModules
 	}
 
-	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+	decoder := worker.NewMetadataDecoder(m.GetPackageDetails, m.pf)
 	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
 	if err != nil {
 		return m.allModules, err

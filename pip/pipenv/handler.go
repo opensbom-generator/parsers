@@ -113,7 +113,8 @@ func (m *PipEnv) ListUsedModules(path string) ([]meta.Package, error) {
 		return m.allModules, errFailedToConvertModules
 	}
 
-	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+	pypiDataFactory := worker.NewPypiPackageDataFactory(helper.NewClient(worker.PyPiURL))
+	decoder := worker.NewMetadataDecoder(m.GetPackageDetails, pypiDataFactory)
 	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
 	if err != nil {
 		return m.allModules, err

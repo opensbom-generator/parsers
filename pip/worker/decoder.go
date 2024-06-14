@@ -19,30 +19,32 @@ type GetPackageDetailsFunc = func(PackageName string) (string, error)
 
 type MetadataDecoder struct {
 	getPkgDetailsFunc GetPackageDetailsFunc
+	pf                PypiPackageDataFactory
 }
 
-// New Metadata Decoder ...
-func NewMetadataDecoder(pkgDetailsFunc GetPackageDetailsFunc) *MetadataDecoder {
+// NewMetadataDecoder ...
+func NewMetadataDecoder(pkgDetailsFunc GetPackageDetailsFunc, pf PypiPackageDataFactory) *MetadataDecoder {
 	return &MetadataDecoder{
 		getPkgDetailsFunc: pkgDetailsFunc,
+		pf:                pf,
 	}
 }
 
-func SetMetadataValues(matadata *Metadata, datamap map[string]string) {
-	matadata.Name = datamap[KeyName]
-	matadata.Version = datamap[KeyVersion]
-	matadata.Description = datamap[KeySummary]
-	matadata.HomePage = datamap[KeyHomePage]
-	matadata.Author = datamap[KeyAuthor]
-	matadata.AuthorEmail = datamap[KeyAuthorEmail]
-	matadata.License = datamap[KeyLicense]
-	matadata.Location = datamap[KeyLocation]
+func SetMetadataValues(metadata *Metadata, datamap map[string]string) {
+	metadata.Name = datamap[KeyName]
+	metadata.Version = datamap[KeyVersion]
+	metadata.Description = datamap[KeySummary]
+	metadata.HomePage = datamap[KeyHomePage]
+	metadata.Author = datamap[KeyAuthor]
+	metadata.AuthorEmail = datamap[KeyAuthorEmail]
+	metadata.License = datamap[KeyLicense]
+	metadata.Location = datamap[KeyLocation]
 
 	// Parsing "Requires"
 	if len(datamap[KeyRequires]) != 0 {
-		matadata.Modules = strings.Split(datamap[KeyRequires], ",")
-		for i, v := range matadata.Modules {
-			matadata.Modules[i] = strings.TrimSpace(v)
+		metadata.Modules = strings.Split(datamap[KeyRequires], ",")
+		for i, v := range metadata.Modules {
+			metadata.Modules[i] = strings.TrimSpace(v)
 		}
 	}
 }
@@ -144,7 +146,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 		module.PackageURL = metadata.HomePage
 	}
 
-	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJSONURL)
+	pypiData, err := d.pf.GetPackageData(metadata.PackageJSONURL)
 	if err != nil {
 		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
 		if (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
@@ -154,7 +156,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 
 	// Prepare supplier contact
 	if len(metadata.Author) > 0 && metadata.Author == "None" {
-		metadata.Author, metadata.AuthorEmail = GetMaintenerDataFromPyPiPackageData(pypiData)
+		metadata.Author, metadata.AuthorEmail = d.pf.GetMaintainerData(pypiData)
 	}
 
 	contactType := meta.Person
@@ -169,11 +171,11 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) meta.Package {
 	}
 
 	// Prepare checksum
-	checksum := GetChecksumeFromPyPiPackageData(pypiData, metadata)
+	checksum := d.pf.GetChecksum(pypiData, metadata)
 	module.Checksum = *checksum
 
 	// Prepare download location
-	downloadURL := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
+	downloadURL := d.pf.GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
 	module.PackageDownloadLocation = downloadURL
 	if len(downloadURL) == 0 {
 		if metadata.Root {
